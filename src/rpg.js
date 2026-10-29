@@ -15,7 +15,7 @@ export const ITEMS = {
 };
 
 export const SHOPS = {
-  mart: { title: 'Corner Mart', stock: [{ item: 'soda', price: 5 }, { item: 'energy', price: 14 }, { item: 'bandage', price: 22 }] },
+  mart: { title: 'Corner Bodega', stock: [{ item: 'soda', price: 5 }, { item: 'energy', price: 14 }, { item: 'bandage', price: 22 }] },
   diner: { title: "Lou's Diner", stock: [{ item: 'coffee', price: 4 }, { item: 'pie', price: 10 }, { item: 'burger', price: 18 }] },
   pizza: { title: "Tony's Pizza", stock: [{ item: 'pizza', price: 8 }] },
   clinic: { title: 'St. Mercy Clinic', stock: [{ service: 'heal', label: 'Full treatment', price: 30 }] },

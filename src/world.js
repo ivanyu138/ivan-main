@@ -1,30 +1,42 @@
 import * as THREE from 'three';
 import { MeshBuilder, makeWindowTextures, textTexture } from './geo.js';
-import { RNG, mod } from './util.js';
+import { RNG, mod, clamp } from './util.js';
 import { Colliders } from './collision.js';
 
-// Layout: a 19x19 grid of 106m blocks separated by 14m streets.
+// Brooklyn-style layout: avenues run north-south every 228m, narrow streets run
+// east-west every 95m, so blocks are long rectangles lined with rowhouses.
+// Avenue 5 (x = 0) is Main Street. The river is off the west edge.
 // 2280m x 2280m ~= 2.0 square miles.
 export const HALF = 1140;
-export const PITCH = 120;
+export const PX = 228;
+export const PZ = 95;
 export const ROAD = 14;
 export const WALK = 3;
-export const NROADS = 20;
-export const NBLOCKS = 19;
+export const NAX = 11; // avenues (x = const)
+export const NSZ = 25; // streets (z = const)
+export const NBX = 10;
+export const NBZ = 24;
 export const CURB = 0.15;
 export const LANE = 3.4;
+export const MAIN_I = 5;
 export const MAP_PX = 0.5; // minimap pixels per meter
 export const MAP_EXT = 1200; // minimap covers -MAP_EXT..MAP_EXT
 
-export const roadPos = (i) => -HALF + i * PITCH;
+export const roadX = (i) => -HALF + i * PX;
+export const roadZ = (j) => -HALF + j * PZ;
+export const nodePos = (i, j) => ({ x: roadX(i), z: roadZ(j) });
+
+const PARK = { i0: 7, i1: 8, j0: 12, j1: 17 };
+export const isParkBlock = (bi, bj) => bi >= PARK.i0 && bi <= PARK.i1 && bj >= PARK.j0 && bj <= PARK.j1;
+export const PARK_RECT = {
+  x0: roadX(PARK.i0) + ROAD / 2, x1: roadX(PARK.i1 + 1) - ROAD / 2,
+  z0: roadZ(PARK.j0) + ROAD / 2, z1: roadZ(PARK.j1 + 1) - ROAD / 2,
+};
+const inPark = (x, z) => x > PARK_RECT.x0 && x < PARK_RECT.x1 && z > PARK_RECT.z0 && z < PARK_RECT.z1;
+const PLAYGROUNDS = new Set(['2,8', '8,4', '1,20', '3,17']);
 
 export function blockRect(bi, bj) {
-  return {
-    x0: roadPos(bi) + ROAD / 2,
-    x1: roadPos(bi + 1) - ROAD / 2,
-    z0: roadPos(bj) + ROAD / 2,
-    z1: roadPos(bj + 1) - ROAD / 2,
-  };
+  return { x0: roadX(bi) + ROAD / 2, x1: roadX(bi + 1) - ROAD / 2, z0: roadZ(bj) + ROAD / 2, z1: roadZ(bj + 1) - ROAD / 2 };
 }
 
 export function lotRect(bi, bj) {
@@ -33,53 +45,101 @@ export function lotRect(bi, bj) {
 }
 
 export function blockIndex(x, z) {
-  const bi = Math.floor((x + HALF) / PITCH), bj = Math.floor((z + HALF) / PITCH);
-  if (bi < 0 || bj < 0 || bi >= NBLOCKS || bj >= NBLOCKS) return null;
+  const bi = Math.floor((x + HALF) / PX), bj = Math.floor((z + HALF) / PZ);
+  if (bi < 0 || bj < 0 || bi >= NBX || bj >= NBZ) return null;
   return [bi, bj];
 }
 
+export function blockAt(x, z) {
+  return [clamp(Math.floor((x + HALF) / PX), 0, NBX - 1), clamp(Math.floor((z + HALF) / PZ), 0, NBZ - 1)];
+}
+
 export function onRoad(x, z) {
-  if (Math.abs(x) > HALF + ROAD / 2 || Math.abs(z) > HALF + ROAD / 2) return false;
-  const lx = mod(x + HALF, PITCH), lz = mod(z + HALF, PITCH);
-  return lx <= ROAD / 2 || lx >= PITCH - ROAD / 2 || lz <= ROAD / 2 || lz >= PITCH - ROAD / 2;
+  if (Math.abs(x) > HALF + ROAD / 2 || Math.abs(z) > HALF + ROAD / 2 || inPark(x, z)) return false;
+  const lx = mod(x + HALF, PX), lz = mod(z + HALF, PZ);
+  return lx <= ROAD / 2 || lx >= PX - ROAD / 2 || lz <= ROAD / 2 || lz >= PZ - ROAD / 2;
 }
 
 export function groundHeight(x, z) {
   return blockIndex(x, z) && !onRoad(x, z) ? CURB : 0;
 }
 
-const PARKS = new Set(['12,13', '13,13', '5,6', '14,4', '4,15', '16,9']);
+// Does the road from node (i,j) to (i+dx, j+dz) exist? Roads inside the big park don't.
+export function segExists(i, j, dx, dz) {
+  const ni = i + dx, nj = j + dz;
+  if (ni < 0 || nj < 0 || ni >= NAX || nj >= NSZ) return false;
+  if (dz) {
+    const jm = Math.min(j, nj);
+    return !(isParkBlock(i - 1, jm) && isParkBlock(i, jm));
+  }
+  const im = Math.min(i, ni);
+  return !(isParkBlock(im, j - 1) && isParkBlock(im, j));
+}
 
 export function district(bi, bj) {
-  if (PARKS.has(bi + ',' + bj)) return 'park';
-  const d = Math.max(Math.abs(bi - 9), Math.abs(bj - 9));
-  if (d <= 1) return 'downtown';
-  if (d <= 2) return 'commercial';
-  if (bj >= 16 && bi >= 11) return 'industrial';
+  if (isParkBlock(bi, bj)) return 'park';
+  if (bj <= 2 && bi >= 3 && bi <= 6) return 'downtown';
+  if (bi === 5 && bj === 3) return 'plaza';
+  if (PLAYGROUNDS.has(bi + ',' + bj)) return 'playground';
+  if (bi === 0 && bj >= 13) return 'industrial';
   return 'residential';
 }
 
+// Shops on Main Street: blocks with bi = 4 face east onto it, bi = 5 face west.
 export const POI_DEFS = [
-  { id: 'townhall', name: 'TOWN HALL', block: [9, 9], color: '#d8d0bc' },
-  { id: 'diner', name: "LOU'S DINER", block: [8, 7], color: '#c94a4a', shop: 'diner' },
-  { id: 'clinic', name: 'ST. MERCY CLINIC', block: [9, 7], color: '#e8eef0', shop: 'clinic' },
-  { id: 'mart', name: 'CORNER MART', block: [11, 9], color: '#4a8ac9', shop: 'mart' },
-  { id: 'pizza', name: "TONY'S PIZZA", block: [7, 10], color: '#e0a030', shop: 'pizza' },
-  { id: 'garage', name: "VIC'S GARAGE", block: [10, 11], color: '#6a6a70', shop: 'garage' },
-  { id: 'police', name: 'POLICE', block: [11, 11], color: '#3a4a7a' },
-  { id: 'gym', name: 'IRON GYM', block: [7, 8], color: '#7a3a8a', shop: 'gym' },
+  { id: 'townhall', name: 'BOROUGH HALL', block: [5, 3], color: '#d8d0bc' },
+  { id: 'clinic', name: 'ST. MERCY CLINIC', block: [5, 5], color: '#dfe6e8', shop: 'clinic' },
+  { id: 'diner', name: "LOU'S DINER", block: [4, 6], color: '#c94a4a', shop: 'diner' },
+  { id: 'mart', name: 'CORNER BODEGA', block: [5, 7], color: '#3f8a5a', shop: 'mart' },
+  { id: 'pizza', name: "TONY'S PIZZA", block: [4, 9], color: '#e0a030', shop: 'pizza' },
+  { id: 'gym', name: 'IRON GYM', block: [5, 10], color: '#7a3a8a', shop: 'gym' },
+  { id: 'garage', name: "VIC'S GARAGE", block: [4, 12], color: '#6a6a70', shop: 'garage' },
+  { id: 'police', name: 'PRECINCT 78', block: [5, 13], color: '#3a4a7a' },
 ];
 
-const HOUSE_WALLS = ['#e8dcc4', '#d9c7a3', '#c7d6dc', '#e6c9c1', '#cfd9b8', '#f0eee6', '#bfc4cc', '#e3d39b', '#b8cfe0'];
-const ROOFS = ['#7a3b2e', '#5a4636', '#4d5560', '#3e4a5a', '#6b2f2a', '#55503f'];
+const BROWNSTONE = ['#7a4a35', '#6b4030', '#8a5a40', '#5e3d2e', '#9a6a4a', '#b39a7a', '#c4b49a', '#8a3f2f', '#9a4a36', '#7a3a2e', '#a8584a'];
+const CORNICE = ['#2e2824', '#3a302a', '#e8e0d0', '#5a4a3a', '#2a3a3a'];
+const BRICK = ['#8a3f2f', '#9a4a36', '#7a3a2e', '#a8584a', '#6e4a3a', '#b0705a', '#5a4038', '#c8b8a0'];
 const TOWERS = ['#9aa4ad', '#b8b2a5', '#7f8c99', '#a7b6c2', '#c4baa8', '#8c9296', '#6e7d8c'];
-const SHOPS = ['#c9876a', '#d6b980', '#9ab88d', '#b0a0c8', '#c2c2b4', '#d49a9a', '#8fb0c4', '#c8a070'];
-const AWNINGS = ['#b23b3b', '#2f7a4f', '#2f5a9a', '#c48a1e', '#7a3a8a', '#e0e0e0'];
-const WIN_HOUSE = { w: 3.2, h: 3 };
-const WIN_SHOP = { w: 3.4, h: 3.4 };
+const AWNINGS = ['#b23b3b', '#2f7a4f', '#2f5a9a', '#c48a1e', '#7a3a8a', '#1f1f1f', '#d8d0c0', '#8a2a2a'];
+const SIGNS = [
+  ['PIZZA', '#c0392b'], ['BAGELS', '#2f5a9a'], ['DELI', '#2f7a4f'], ['COFFEE', '#5a3a28'], ['TACOS', '#d68910'],
+  ['RAMEN', '#1f1f1f'], ['SUSHI', '#8a2a2a'], ['BAKERY', '#c48a5a'], ['BAR', '#3a2a4a'], ['WINE', '#6a1a2a'],
+  ['BOOKS', '#2a4a3a'], ['FLOWERS', '#c94a9a'], ['LAUNDRY', '#2f8aa0'], ['HARDWARE', '#b23b3b'], ['PHARMACY', '#2f7a4f'],
+  ['THAI', '#d68910'], ['BBQ', '#5a2a1a'], ['DUMPLINGS', '#c0392b'], ['FALAFEL', '#7a8a2a'], ['ICE CREAM', '#e07aa0'],
+  ['BURGERS', '#a04000'], ['BARBER', '#2f5a9a'], ['RECORDS', '#1f1f1f'], ['VINTAGE', '#8e44ad'], ['PET SHOP', '#27ae60'],
+  ['BANK', '#34495e'], ['GROCERY', '#2f7a4f'], ['TEA', '#6a8a3a'], ['NOODLES', '#c0392b'], ['CAFE', '#5a3a28'],
+  ['GELATO', '#3aa0a0'], ['PUB', '#2a3a2a'],
+];
+const WIN_ROW = { w: 2.7, h: 3.2 };
+const WIN_APT = { w: 3, h: 3.2 };
 const WIN_TOWER = { w: 3, h: 3.5 };
 const WIN_WARE = { w: 7, h: 4.5 };
 const CH = 190;
+
+function signAtlas() {
+  const c = document.createElement('canvas'), W = 128, H = 32, cols = 4, rows = SIGNS.length / cols;
+  c.width = W * cols;
+  c.height = H * rows;
+  const x = c.getContext('2d');
+  SIGNS.forEach(([text, bg], i) => {
+    const px = (i % cols) * W, py = Math.floor(i / cols) * H;
+    x.fillStyle = bg;
+    x.fillRect(px, py, W, H);
+    x.strokeStyle = '#ffffff88';
+    x.lineWidth = 2;
+    x.strokeRect(px + 3, py + 3, W - 6, H - 6);
+    x.fillStyle = '#fff6dc';
+    x.font = 'bold 18px "Courier New", monospace';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText(text, px + W / 2, py + H / 2 + 1, W - 12);
+  });
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.magFilter = THREE.NearestFilter;
+  return { tex: t, cols, rows };
+}
 
 export class World {
   constructor(scene) {
@@ -97,7 +157,9 @@ export class World {
     this.signs = [];
     this.groundB = new MeshBuilder();
     this.markB = new MeshBuilder();
+    this.signB = new MeshBuilder();
     this.rng = new RNG(20261029);
+    this.atlas = signAtlas();
 
     const tex = makeWindowTextures();
     this.bldMat = new THREE.MeshLambertMaterial({
@@ -130,41 +192,48 @@ export class World {
     const E = HALF + ROAD / 2, F = 3200;
     g.quadH(-E, -E, E, E, 0, '#3a3b3f');
     const grass = '#4c7438';
-    g.quadH(-F, -F, F, -E, 0, grass);
-    g.quadH(-F, E, F, F, 0, grass);
-    g.quadH(-F, -E, -E, E, 0, grass);
+    g.quadH(-E, -F, F, -E, 0, grass);
+    g.quadH(-E, E, F, F, 0, grass);
     g.quadH(E, -E, F, E, 0, grass);
+    // The river and a seawall along the west edge.
+    g.box(-E - 1.5, -1.2, 0, 3, 1.35, E * 2 + 6, '#8a8780');
+    g.quadH(-F, -F, -E - 3, F, -1.1, '#3d6f8f');
+    g.quadH(-E - 3, -F, -E, -E - 3, -1.1, '#3d6f8f');
+    g.quadH(-E - 3, E + 3, -E, F, -1.1, '#3d6f8f');
+    for (let z = -E; z < E; z += 2.5) g.box(-E - 0.4, 0.15, z, 0.08, 1, 0.08, '#2a2a2a');
+    g.box(-E - 0.4, 1.1, 0, 0.1, 0.08, E * 2, '#2a2a2a');
 
-    for (let bi = 0; bi < NBLOCKS; bi++) {
-      for (let bj = 0; bj < NBLOCKS; bj++) this.genBlock(bi, bj);
+    for (let bi = 0; bi < NBX; bi++) {
+      for (let bj = 0; bj < NBZ; bj++) if (!isParkBlock(bi, bj)) this.genBlock(bi, bj);
     }
+    this.genBigPark();
     this.genRoadMarkings();
     this.genLamps();
     this.genBoundary();
   }
 
+  sidewalkRing(r, color = '#a3a19a') {
+    const g = this.groundB, W = r.x1 - r.x0, D = r.z1 - r.z0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
+    g.box(cx, 0, r.z0 + WALK / 2, W, CURB, WALK, color);
+    g.box(cx, 0, r.z1 - WALK / 2, W, CURB, WALK, color);
+    g.box(r.x0 + WALK / 2, 0, cz, WALK, CURB, D - WALK * 2, color);
+    g.box(r.x1 - WALK / 2, 0, cz, WALK, CURB, D - WALK * 2, color);
+    this.rect(r.x0, r.z0, r.x1, r.z1, color);
+  }
+
   genBlock(bi, bj) {
     const r = blockRect(bi, bj), L = lotRect(bi, bj);
-    const g = this.groundB, d = district(bi, bj), rng = this.rng;
-    const W = r.x1 - r.x0, cx = (r.x0 + r.x1) / 2, cz = (r.z0 + r.z1) / 2;
-    const sw = '#a3a19a';
-    g.box(cx, 0, r.z0 + WALK / 2, W, CURB, WALK, sw);
-    g.box(cx, 0, r.z1 - WALK / 2, W, CURB, WALK, sw);
-    g.box(r.x0 + WALK / 2, 0, cz, WALK, CURB, W - WALK * 2, sw);
-    g.box(r.x1 - WALK / 2, 0, cz, WALK, CURB, W - WALK * 2, sw);
+    const d = district(bi, bj), rng = this.rng;
+    this.sidewalkRing(r);
     const lotColor = {
-      residential: '#5d8a44', park: '#4f8c3a', downtown: '#8e8b85', commercial: '#86837c', industrial: '#7b786f',
+      residential: '#5f8545', playground: '#4f8c3a', downtown: '#8e8b85', plaza: '#8e8b85', industrial: '#7b786f',
     }[d];
-    g.quadH(L.x0, L.z0, L.x1, L.z1, CURB, lotColor);
-    this.rect(r.x0, r.z0, r.x1, r.z1, '#a3a19a');
+    this.groundB.quadH(L.x0, L.z0, L.x1, L.z1, CURB, lotColor);
     this.rect(L.x0, L.z0, L.x1, L.z1, lotColor);
-
-    const poi = POI_DEFS.find((p) => p.block[0] === bi && p.block[1] === bj);
-    if (poi && poi.id === 'townhall') return this.genTownHall(L, poi);
-    if (d === 'residential') this.genResidential(L, rng);
+    if (d === 'residential') this.genResidential(bi, bj, L, rng);
     else if (d === 'downtown') this.genDowntown(L, rng, bi, bj);
-    else if (d === 'commercial') this.genCommercial(L, rng, poi);
-    else if (d === 'park') this.genPark(L, rng, bi, bj);
+    else if (d === 'plaza') this.genPlaza(L, rng);
+    else if (d === 'playground') this.genPlayground(L, rng, bi, bj);
     else this.genIndustrial(L, rng);
   }
 
@@ -174,156 +243,144 @@ export class World {
     this.rect(cx - w / 2, cz - d / 2, cx + w / 2, cz + d / 2, shade(color, 0.72));
   }
 
-  house(x0, z0, x1, z1, front, set, rng) {
-    const b = this.chunkB((x0 + x1) / 2, (z0 + z1) / 2);
-    const floors = rng.chance(0.35) ? 2 : 1;
-    const h = floors * 3 + 0.2;
-    const wall = rng.pick(HOUSE_WALLS), roof = rng.pick(ROOFS);
-    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
-    b.box(cx, CURB, cz, w, h, d, wall, WIN_HOUSE);
-    const rh = rng.range(2, 3);
-    b.gable(x0, z0, x1, z1, CURB + h, rh, roof, wall, front === 'n' || front === 's');
-    if (rng.chance(0.3)) b.box(x0 + w * 0.25, CURB + h, cz, 0.8, rh + 0.6, 0.8, '#7a5a4a');
-    this.colliders.addBox(x0, z0, x1, z1, CURB + h + rh);
-    this.rect(x0, z0, x1, z1, shade(roof, 1.1));
+  // Street trees in the sidewalk along a block's north and south edges.
+  streetTrees(r, rng) {
+    for (const z of [r.z0 + 0.7, r.z1 - 0.7]) {
+      for (let x = r.x0 + 9; x < r.x1 - 9; x += rng.range(11, 15)) if (rng.chance(0.85)) this.addTree(x, z, rng, 0.9);
+    }
+  }
 
-    const door = '#5b3a29', path = '#b9b3a6';
+  genResidential(bi, bj, L, rng) {
+    const mainEnd = bj >= 3 ? (bi === MAIN_I - 1 ? 'e' : bi === MAIN_I ? 'w' : null) : null;
+    const poi = POI_DEFS.find((p) => p.block[0] === bi && p.block[1] === bj);
+    for (const end of ['w', 'e']) {
+      if (end === mainEnd) this.storefrontRow(L, end, poi, rng);
+      else this.apartmentEnd(L, end, rng);
+    }
+    const ax0 = L.x0 + 17, ax1 = L.x1 - 17;
+    this.rowhouseRow(ax0, ax1, L, 'n', rng);
+    this.rowhouseRow(ax0, ax1, L, 's', rng);
+    // Backyards run down the middle of the block.
+    const bz0 = L.z0 + 19, bz1 = L.z1 - 19, mz = (bz0 + bz1) / 2;
     const m = this.markB;
-    let dp;
-    if (front === 'n') {
-      b.box(cx, CURB, z0 - 0.06, 1.1, 2.1, 0.12, door);
-      m.quadH(cx - 0.7, z0 - set, cx + 0.7, z0, CURB + 0.01, path);
-      dp = { x: cx, z: z0 - 1.6 };
-    } else if (front === 's') {
-      b.box(cx, CURB, z1 + 0.06, 1.1, 2.1, 0.12, door);
-      m.quadH(cx - 0.7, z1, cx + 0.7, z1 + set, CURB + 0.01, path);
-      dp = { x: cx, z: z1 + 1.6 };
-    } else if (front === 'w') {
-      b.box(x0 - 0.06, CURB, cz, 0.12, 2.1, 1.1, door);
-      m.quadH(x0 - set, cz - 0.7, x0, cz + 0.7, CURB + 0.01, path);
-      dp = { x: x0 - 1.6, z: cz };
-    } else {
-      b.box(x1 + 0.06, CURB, cz, 0.12, 2.1, 1.1, door);
-      m.quadH(x1, cz - 0.7, x1 + set, cz + 0.7, CURB + 0.01, path);
-      dp = { x: x1 + 1.6, z: cz };
+    for (let x = ax0 + 14; x < ax1; x += rng.range(14, 22)) {
+      m.box(x, CURB, mz, 0.08, 1.3, bz1 - bz0, '#7a5a3a');
+      if (rng.chance(0.5)) this.addTree(x + rng.range(-8, 8), mz + rng.range(-12, 12), rng);
     }
-    this.houseDoors.push(dp);
+    for (let k = 0; k < 3; k++) this.backyards.push({ x: ax0 + ((k + 0.5) * (ax1 - ax0)) / 3, z: mz, w: 26 });
+    this.streetTrees(blockRect(bi, bj), rng);
   }
 
-  genResidential(L, rng) {
-    for (let k = 0; k < 5; k++) {
-      const fx0 = L.x0 + k * 20;
-      for (const side of ['n', 's']) {
-        const w = rng.range(10, 14), dp = rng.range(9, 12), set = rng.range(5, 8);
-        const cx = fx0 + 10 + rng.range(-1.5, 1.5);
-        if (side === 'n') this.house(cx - w / 2, L.z0 + set, cx + w / 2, L.z0 + set + dp, 'n', set, rng);
-        else this.house(cx - w / 2, L.z1 - set - dp, cx + w / 2, L.z1 - set, 's', set, rng);
-        if (rng.chance(0.55)) this.addTree(fx0 + 1.6, side === 'n' ? L.z0 + 1.8 : L.z1 - 1.8, rng);
-      }
-    }
-    for (let k = 0; k < 2; k++) {
-      const cz = L.z0 + 34 + k * 16 + 8;
-      for (const side of ['w', 'e']) {
-        const w = rng.range(10, 13), dp = rng.range(9, 11), set = rng.range(5, 8);
-        if (side === 'w') this.house(L.x0 + set, cz - w / 2, L.x0 + set + dp, cz + w / 2, 'w', set, rng);
-        else this.house(L.x1 - set - dp, cz - w / 2, L.x1 - set, cz + w / 2, 'e', set, rng);
-      }
-    }
-    // Shared backyard space in the middle of the block.
-    const bx0 = L.x0 + 23, bx1 = L.x1 - 23, bz0 = L.z0 + 23, bz1 = L.z1 - 23;
-    const n = rng.int(4, 8);
-    for (let i = 0; i < n; i++) this.addTree(rng.range(bx0, bx1), rng.range(bz0, bz1), rng);
-    if (rng.chance(0.3)) {
-      const px = rng.range(bx0 + 6, bx1 - 6), pz = rng.range(bz0 + 6, bz1 - 6);
-      this.markB.box(px, CURB, pz, 7, 0.08, 11, '#d8d4c8');
-      this.markB.quadH(px - 3, pz - 5, px + 3, pz + 5, CURB + 0.1, '#4fb8e0');
-      this.rect(px - 3, pz - 5, px + 3, pz + 5, '#4fb8e0');
-    }
-    this.backyards.push({ x: (bx0 + bx1) / 2, z: (bz0 + bz1) / 2, w: bx1 - bx0 });
-  }
-
-  genDowntown(L, rng, bi, bj) {
-    const central = Math.abs(bi - 9) + Math.abs(bj - 9) <= 1;
-    for (let pi = 0; pi < 2; pi++) {
-      for (let pj = 0; pj < 2; pj++) {
-        const px = L.x0 + pi * 50 + 25, pz = L.z0 + pj * 50 + 25;
-        if (rng.chance(0.12)) {
-          for (let i = 0; i < 4; i++) this.addTree(px + rng.range(-18, 18), pz + rng.range(-18, 18), rng);
-          continue;
-        }
-        const w = rng.range(30, 44), d = rng.range(30, 44);
-        const h = rng.range(18, 42) * (central ? 1.6 : 1);
-        const c = rng.pick(TOWERS);
-        this.addBuilding(px, pz, w, h, d, c, WIN_TOWER);
-        const b = this.chunkB(px, pz);
-        if (rng.chance(0.5)) {
-          const h2 = h * rng.range(0.25, 0.5);
-          b.box(px, CURB + h, pz, w * 0.68, h2, d * 0.68, shade(c, 0.92), WIN_TOWER);
-          b.box(px, CURB + h + h2, pz, 2.5, 5, 2.5, '#555');
-        } else {
-          b.box(px + w * 0.2, CURB + h, pz - d * 0.15, 4, 2, 3, '#8a8d90');
-          b.box(px - w * 0.2, CURB + h, pz + d * 0.2, 3, 1.6, 5, '#8a8d90');
-        }
+  rowhouseRow(ax0, ax1, L, front, rng) {
+    let x = ax0;
+    while (x < ax1 - 4) {
+      // Rowhouses come in terraces of matching houses built together.
+      const n = rng.int(3, 7);
+      const style = {
+        color: rng.pick(BROWNSTONE), cornice: rng.pick(CORNICE), w: rng.range(6.2, 8),
+        h: rng.pick([10.2, 10.2, 13.4, 13.4, 13.4, 16.6]),
+      };
+      for (let k = 0; k < n && x < ax1 - 4; k++) {
+        let w = Math.min(style.w, ax1 - x);
+        if (ax1 - x - w < 5) w = ax1 - x;
+        this.rowhouse(x, x + w, L, front, style, k);
+        x += w;
       }
     }
   }
 
-  shopRow(a0, a1, f0, f1, front, rng) {
-    // a = along-street axis range, f = depth range; front = which face is the storefront.
-    const alongX = front === 'n' || front === 's';
-    let cur = a0;
-    while (cur < a1 - 1) {
-      let w = rng.range(12, 22);
-      if (a1 - cur - w < 9) w = a1 - cur;
-      const h = rng.range(5, 11), c = rng.pick(SHOPS), aw = rng.pick(AWNINGS);
-      const mid = cur + w / 2, depth = f1 - f0, fm = (f0 + f1) / 2;
-      const b = alongX ? this.chunkB(mid, fm) : this.chunkB(fm, mid);
-      if (alongX) {
-        this.addBuilding(mid, fm, w - 0.4, h, depth, c, WIN_SHOP);
-        const fz = front === 'n' ? f0 - 0.8 : f1 + 0.8;
-        b.box(mid, CURB + 2.8, fz, w - 2, 0.25, 1.6, aw);
-      } else {
-        this.addBuilding(fm, mid, depth, h, w - 0.4, c, WIN_SHOP);
-        const fx = front === 'w' ? f0 - 0.8 : f1 + 0.8;
-        b.box(fx, CURB + 2.8, mid, 1.6, 0.25, w - 2, aw);
+  rowhouse(x0, x1, L, front, style, k) {
+    const set = 3.5, dep = 14, h = style.h, s = front === 'n' ? -1 : 1;
+    const zf = front === 'n' ? L.z0 + set : L.z1 - set;
+    const z0 = Math.min(zf, zf - s * dep), z1 = Math.max(zf, zf - s * dep);
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0;
+    const b = this.chunkB(cx, cz);
+    b.box(cx, CURB, cz, w - 0.04, h, dep, style.color, WIN_ROW);
+    b.box(cx, CURB + h - 0.15, zf + s * 0.3, w, 0.6, 0.6, style.cornice);
+    const dx = k % 2 ? x0 + 1.7 : x1 - 1.7, stoop = shade(style.color, 0.82);
+    b.box(dx, CURB, zf + s * 1, 2, 1.5, 2, stoop);
+    b.box(dx, CURB, zf + s * 2.6, 2, 0.75, 1.2, stoop);
+    const fz = zf + s * 0.02, y0 = CURB + 1.5, y1 = CURB + 3.9, da = dx - 0.6, db = dx + 0.6;
+    if (s < 0) b.quad([db, y0, fz], [da, y0, fz], [da, y1, fz], [db, y1, fz], '#3a2418');
+    else b.quad([da, y0, fz], [db, y0, fz], [db, y1, fz], [da, y1, fz], '#3a2418');
+    this.colliders.addBox(x0, z0, x1, z1, CURB + h);
+    this.rect(x0, z0, x1, z1, shade(style.color, 0.8));
+    this.houseDoors.push({ x: dx, z: front === 'n' ? L.z0 - 1 : L.z1 + 1 });
+  }
+
+  // Five- and six-story brick apartment buildings with fire escapes, facing an avenue.
+  apartmentEnd(L, end, rng) {
+    const D = 16, s = end === 'e' ? 1 : -1, fx = end === 'e' ? L.x1 : L.x0, cx = fx - s * (D / 2);
+    const mid = (L.z0 + L.z1) / 2;
+    for (const [za, zb] of [[L.z0, mid], [mid, L.z1]]) {
+      const zc = (za + zb) / 2, w = zb - za, h = rng.pick([16.6, 19.8, 19.8, 23]), c = rng.pick(BRICK);
+      this.addBuilding(cx, zc, D, h, w - 0.2, c, WIN_APT);
+      const b = this.chunkB(cx, zc);
+      b.box(cx, CURB + h - 0.2, zc, D + 0.3, 0.7, w + 0.1, shade(c, 0.6));
+      b.box(fx + s * 0.06, CURB, zc, 0.14, 2.6, 1.8, '#2a2018');
+      for (let y = CURB + 3.4; y < CURB + h - 3; y += 3.2) {
+        b.box(fx + s * 0.6, y, zc + w * 0.22, 1.1, 0.12, 4, '#1f1f1f');
+        b.box(fx + s * 1.12, y, zc + w * 0.22, 0.06, 0.9, 4, '#1f1f1f');
       }
-      cur += w;
     }
   }
 
-  genCommercial(L, rng, poi) {
-    const D = 14;
-    if (!poi) this.shopRow(L.x0, L.x1, L.z0, L.z0 + D, 'n', rng);
-    else {
-      this.shopRow(L.x0, L.x0 + 30, L.z0, L.z0 + D, 'n', rng);
-      this.shopRow(L.x1 - 30, L.x1, L.z0, L.z0 + D, 'n', rng);
-      this.genPOI(poi, (L.x0 + L.x1) / 2, L.z0 + 6, 34, 18, rng.range(8, 11));
+  // Main Street frontage: shops and restaurants at street level, apartments above.
+  storefrontRow(L, end, poi, rng) {
+    const s = end === 'e' ? 1 : -1, fx = end === 'e' ? L.x1 : L.x0, zc = (L.z0 + L.z1) / 2;
+    const ranges = poi ? [[L.z0, zc - 15], [zc + 15, L.z1]] : [[L.z0, L.z1]];
+    for (const [a0, a1] of ranges) {
+      let z = a0;
+      while (z < a1 - 1) {
+        let w = rng.range(9, 14);
+        if (a1 - z - w < 7) w = a1 - z;
+        this.storefront(fx, s, z, z + w, rng);
+        z += w;
+      }
     }
-    this.shopRow(L.x0, L.x1, L.z1 - D, L.z1, 's', rng);
-    this.shopRow(L.z0 + D, L.z1 - D, L.x0, L.x0 + D, 'w', rng);
-    this.shopRow(L.z0 + D, L.z1 - D, L.x1 - D, L.x1, 'e', rng);
-    const pz0 = poi ? L.z0 + 27 : L.z0 + 18;
-    const m = this.markB;
-    m.quadH(L.x0 + 18, pz0, L.x1 - 18, L.z1 - 18, CURB + 0.01, '#55575c');
-    for (let x = L.x0 + 21; x < L.x1 - 20; x += 3) {
-      m.quadH(x, pz0 + 1, x + 0.12, pz0 + 6, CURB + 0.02, '#e8e8e0');
-      m.quadH(x, L.z1 - 24, x + 0.12, L.z1 - 19, CURB + 0.02, '#e8e8e0');
-    }
-    this.rect(L.x0 + 18, pz0, L.x1 - 18, L.z1 - 18, '#66686c');
+    if (poi) this.genPOI(poi, fx, zc, s, 30, 16, rng.range(9, 12));
   }
 
-  genPOI(poi, cx, zf, w, d, h, awning = true) {
-    // Building spans z zf..zf+d with its entrance facing north (toward -z).
-    const b = this.chunkB(cx, zf + d / 2);
-    this.addBuilding(cx, zf + d / 2, w, h, d, poi.color, WIN_SHOP);
-    b.box(cx, CURB, zf - 0.08, 2.4, 2.6, 0.16, '#2a2a30');
-    if (awning) b.box(cx, CURB + 3.2, zf - 1, w - 4, 0.3, 2, shade(poi.color, 0.7));
-    const tex = textTexture(poi.name, shade(poi.color, 0.55));
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(10, 2.5), new THREE.MeshBasicMaterial({ map: tex }));
-    sign.position.set(cx, CURB + h - 2.2, zf - 0.1);
-    sign.rotation.y = Math.PI;
+  storefront(fx, s, za, zb, rng) {
+    const w = zb - za, zc = (za + zb) / 2, h = rng.pick([7, 10.4, 13.6, 13.6]), c = rng.pick(BRICK);
+    this.addBuilding(fx - s * 8, zc, 16, h, w - 0.1, c, WIN_ROW);
+    const b = this.chunkB(fx, zc);
+    b.box(fx + s * 0.07, CURB + 0.25, zc, 0.14, 2.8, w - 1.4, '#22313d');
+    b.box(fx + s * 0.1, CURB, zc + w / 2 - 1.5, 0.12, 2.5, 1.1, '#4a3020');
+    b.box(fx + s * 0.85, CURB + 3.1, zc, 1.7, 0.25, w - 0.8, rng.pick(AWNINGS));
+    b.box(fx + s * 0.1, CURB + h - 0.2, zc, 0.5, 0.5, w - 0.1, shade(c, 0.6));
+    const sw = Math.min(w - 1.6, 4.6);
+    this.sign(fx + s * 0.16, s, zc - sw / 2, zc + sw / 2, CURB + 3.5, CURB + 4.6, rng.int(0, SIGNS.length - 1));
+    if (rng.chance(0.25)) {
+      // A couple of sidewalk cafe tables.
+      for (const dz of [-1.8, 1.8]) {
+        b.box(fx + s * 1.6, CURB, zc + dz, 0.7, 0.75, 0.7, '#3a3a3a');
+        this.colliders.addBox(fx + s * 1.6 - 0.35, zc + dz - 0.35, fx + s * 1.6 + 0.35, zc + dz + 0.35, 0.9);
+      }
+    }
+  }
+
+  sign(fx, s, za, zb, y0, y1, idx) {
+    const { cols, rows } = this.atlas;
+    const u0 = (idx % cols) / cols, u1 = u0 + 1 / cols;
+    const v1 = 1 - Math.floor(idx / cols) / rows, v0 = v1 - 1 / rows;
+    const uv = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+    if (s > 0) this.signB.quad([fx, y0, zb], [fx, y0, za], [fx, y1, za], [fx, y1, zb], '#ffffff', uv);
+    else this.signB.quad([fx, y0, za], [fx, y0, zb], [fx, y1, zb], [fx, y1, za], '#ffffff', uv);
+  }
+
+  // A landmark building facing Main Street (east or west, s = +1 faces east).
+  genPOI(poi, fx, zc, s, wz, d, h, awning = true) {
+    const cx = fx - s * (d / 2);
+    this.addBuilding(cx, zc, d, h, wz, poi.color, WIN_ROW);
+    const b = this.chunkB(cx, zc);
+    b.box(fx + s * 0.08, CURB, zc, 0.16, 2.6, 2.4, '#2a2a30');
+    if (awning) b.box(fx + s * 1, CURB + 3.2, zc, 2, 0.3, wz - 4, shade(poi.color, 0.7));
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(10, 2.5), new THREE.MeshBasicMaterial({ map: textTexture(poi.name, shade(poi.color, 0.55)) }));
+    sign.position.set(fx + s * 0.1, CURB + h - 2.2, zc);
+    sign.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2;
     this.scene.add(sign);
-    const door = { x: cx, z: zf - 2.5 };
+    const door = { x: fx + s * 2.5, z: zc };
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.9, 1.3, 16),
       new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.7, depthWrite: false }),
@@ -332,129 +389,205 @@ export class World {
     ring.position.set(door.x, CURB + 0.03, door.z);
     this.scene.add(ring);
     this.signs.push(ring);
-    this.pois[poi.id] = { ...poi, door, cx, cz: zf + d / 2 };
+    // Where to leave a car at the curb out front.
+    const curb = { x: roadX(MAIN_I) - s * (ROAD / 2 - 1.8), z: zc + 10, h: s > 0 ? 0 : Math.PI };
+    this.pois[poi.id] = { ...poi, door, curb, cx, cz: zc };
   }
 
-  genTownHall(L, poi) {
-    const cx = (L.x0 + L.x1) / 2, zf = L.z1 - 30, d = 22, w = 44, h = 12;
-    this.genPOI(poi, cx, zf, w, d, h, false);
-    const b = this.chunkB(cx, zf);
+  genPlaza(L, rng) {
+    const zc = (L.z0 + L.z1) / 2, fx = L.x0 + 100, poi = POI_DEFS.find((p) => p.id === 'townhall');
+    this.genPOI(poi, fx, zc, -1, 50, 30, 13, false);
+    const b = this.chunkB(fx, zc);
     for (let i = 0; i < 6; i++) {
-      const x = cx - 15 + i * 6;
-      b.box(x, CURB, zf - 2, 1.1, h - 1, 1.1, '#efe9da');
-      this.colliders.addBox(x - 0.55, zf - 2.55, x + 0.55, zf - 1.45, h);
+      const z = zc - 15 + i * 6;
+      b.box(fx - 2, CURB, z, 1.1, 12, 1.1, '#efe9da');
+      this.colliders.addBox(fx - 2.55, z - 0.55, fx - 1.45, z + 0.55, 13);
     }
-    b.box(cx, CURB + h - 1, zf - 2, w - 6, 1, 3, '#d0c8b4');
-    b.prism(cx, CURB + h, zf + d / 2, 7, 3, 12, '#c9c1ac');
-    b.prism(cx, CURB + h + 3, zf + d / 2, 5, 3, 12, '#6f9a8a', '#5f8a7a');
-    b.box(cx, CURB + h + 6, zf + d / 2, 0.3, 4, 0.3, '#444');
-    // Plaza with a fountain.
-    const fz = L.z0 + 38, m = this.markB;
-    m.quadH(cx - 3, fz, cx + 3, zf, CURB + 0.01, '#bdb6a6');
-    m.quadH(L.x0, fz - 3, L.x1, fz + 3, CURB + 0.01, '#bdb6a6');
-    b.prism(cx, CURB, fz, 6, 0.8, 16, '#b8b2a4');
-    b.prism(cx, CURB + 0.6, fz, 5.4, 0.15, 16, '#4f9fd0');
-    b.prism(cx, CURB, fz, 0.7, 3, 8, '#c8c2b4');
-    b.prism(cx, CURB + 2.6, fz, 1.8, 0.3, 12, '#b8b2a4', '#4f9fd0');
-    this.colliders.addCircle(cx, fz, 6.1, 1);
-    this.mapCircles.push([cx, fz, 6, '#4f9fd0']);
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      this.addTree(cx + Math.cos(a) * 30, fz + Math.sin(a) * 26, this.rng, 1.1);
+    b.box(fx - 2, CURB + 12, zc, 3, 1, 44, '#d0c8b4');
+    b.prism(fx + 15, CURB + 13, zc, 8, 3, 12, '#c9c1ac');
+    b.prism(fx + 15, CURB + 16, zc, 5.5, 3.5, 12, '#6f9a8a', '#5f8a7a');
+    b.box(fx + 15, CURB + 19.5, zc, 0.3, 4, 0.3, '#444');
+    // Plaza with a fountain between Main Street and the hall.
+    const px = L.x0 + 48, m = this.markB;
+    m.quadH(px, zc - 3, fx, zc + 3, CURB + 0.01, '#bdb6a6');
+    m.quadH(px - 3, L.z0, px + 3, L.z1, CURB + 0.01, '#bdb6a6');
+    m.quadH(L.x0, zc - 3, px, zc + 3, CURB + 0.01, '#bdb6a6');
+    b.prism(px, CURB, zc, 6, 0.8, 16, '#b8b2a4');
+    b.prism(px, CURB + 0.6, zc, 5.4, 0.15, 16, '#4f9fd0');
+    b.prism(px, CURB, zc, 0.7, 3, 8, '#c8c2b4');
+    b.prism(px, CURB + 2.6, zc, 1.8, 0.3, 12, '#b8b2a4', '#4f9fd0');
+    this.colliders.addCircle(px, zc, 6.1, 1);
+    this.mapCircles.push([px, zc, 6, '#4f9fd0']);
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      this.addTree(px + Math.cos(a) * 34, zc + Math.sin(a) * 28, rng, 1.1);
     }
-    this.plaza = { x: cx, z: fz };
+    for (const x of [fx + 52, fx + 88]) this.addBuilding(x, zc, 30, rng.range(40, 70), 50, rng.pick(TOWERS), WIN_TOWER);
+    this.plaza = { x: px, z: zc, hall: fx };
   }
 
-  genPark(L, rng, bi, bj) {
-    const cx = (L.x0 + L.x1) / 2, cz = (L.z0 + L.z1) / 2, m = this.markB;
-    m.quadH(L.x0, cz - 1.5, L.x1, cz + 1.5, CURB + 0.01, '#c8b98f');
-    m.quadH(cx - 1.5, L.z0, cx + 1.5, L.z1, CURB + 0.01, '#c8b98f');
-    this.rect(L.x0, cz - 1.5, L.x1, cz + 1.5, '#c8b98f');
-    this.rect(cx - 1.5, L.z0, cx + 1.5, L.z1, '#c8b98f');
-    const qx = cx + (rng.chance(0.5) ? -25 : 25), qz = cz + (rng.chance(0.5) ? -25 : 25);
-    const pr = rng.range(10, 15);
-    m.prism(qx, CURB, qz, pr, 0.05, 20, '#3f86b8');
-    this.colliders.addCircle(qx, qz, pr - 1, 2);
-    this.mapCircles.push([qx, qz, pr, '#3f86b8']);
-    for (let i = 0; i < 40; i++) {
-      const x = rng.range(L.x0 + 2, L.x1 - 2), z = rng.range(L.z0 + 2, L.z1 - 2);
-      if (Math.abs(x - cx) < 4 || Math.abs(z - cz) < 4 || Math.hypot(x - qx, z - qz) < pr + 3) continue;
+  genDowntown(L, rng, bi, bj) {
+    const n = 4, pw = (L.x1 - L.x0) / n;
+    for (let k = 0; k < n; k++) {
+      const px = L.x0 + (k + 0.5) * pw, pz = (L.z0 + L.z1) / 2;
+      if (rng.chance(0.1)) {
+        for (let i = 0; i < 4; i++) this.addTree(px + rng.range(-18, 18), pz + rng.range(-25, 25), rng);
+        continue;
+      }
+      const w = rng.range(34, pw - 6), d = rng.range(44, 66), h = rng.range(30, 85) * (bj === 0 ? 1.3 : 1);
+      const c = rng.pick(TOWERS);
+      this.addBuilding(px, pz, w, h, d, c, WIN_TOWER);
+      const b = this.chunkB(px, pz);
+      if (rng.chance(0.5)) {
+        const h2 = h * rng.range(0.25, 0.5);
+        b.box(px, CURB + h, pz, w * 0.68, h2, d * 0.68, shade(c, 0.92), WIN_TOWER);
+        b.box(px, CURB + h + h2, pz, 2.5, 5, 2.5, '#555');
+      } else {
+        b.box(px + w * 0.2, CURB + h, pz - d * 0.15, 4, 2, 3, '#8a8d90');
+        b.box(px - w * 0.2, CURB + h, pz + d * 0.2, 3, 1.6, 5, '#8a8d90');
+      }
+    }
+    this.streetTrees(blockRect(bi, bj), rng);
+  }
+
+  genPlayground(L, rng, bi, bj) {
+    const cx = (L.x0 + L.x1) / 2, cz = (L.z0 + L.z1) / 2, m = this.markB, b = this.chunkB(cx, cz);
+    // Basketball court
+    m.quadH(cx - 45, cz - 14, cx - 17, cz + 14, CURB + 0.01, '#c0704a');
+    m.quadH(cx - 31.1, cz - 14, cx - 30.9, cz + 14, CURB + 0.02, '#f0f0f0');
+    for (const x of [cx - 44, cx - 18]) b.box(x, CURB, cz, 0.2, 3.2, 0.2, '#444');
+    // Play structure
+    b.box(cx + 20, CURB, cz, 6, 0.3, 6, '#2f7ac0');
+    for (const [dx, dz] of [[-2.8, -2.8], [2.8, -2.8], [-2.8, 2.8], [2.8, 2.8]]) b.box(cx + 20 + dx, CURB, cz + dz, 0.25, 2.6, 0.25, '#e0c040');
+    b.box(cx + 20, CURB + 2.4, cz, 6.2, 0.3, 6.2, '#c94a4a');
+    b.box(cx + 26, CURB, cz, 4, 1.4, 1, '#e07a30');
+    this.colliders.addBox(cx + 17, cz - 3, cx + 23, cz + 3, 2.7);
+    m.quadH(cx + 10, cz - 10, cx + 32, cz + 10, CURB + 0.01, '#8a7a6a');
+    this.rect(cx - 45, cz - 14, cx - 17, cz + 14, '#c0704a');
+    for (let i = 0; i < 14; i++) {
+      const x = rng.range(L.x0 + 3, L.x1 - 3), z = rng.pick([L.z0 + 3, L.z1 - 3]) + rng.range(-1, 1);
       this.addTree(x, z, rng);
     }
-    const b = this.chunkB(cx, cz);
-    for (const [bx, bz] of [[cx - 12, cz + 2.6], [cx + 12, cz - 2.6], [cx + 2.6, cz + 14]]) {
-      b.box(bx, CURB, bz, 2, 0.5, 0.6, '#7a5233');
-      this.colliders.addBox(bx - 1, bz - 0.3, bx + 1, bz + 0.3, 0.6);
+    this.parks[bi + ',' + bj] = { x: cx, z: cz };
+    this.backyards.push({ x: cx + 60, z: cz, w: 30 });
+    this.streetTrees(blockRect(bi, bj), rng);
+  }
+
+  // Prospect-style park spanning 2x6 blocks, with no streets through it.
+  genBigPark() {
+    const r = PARK_RECT, rng = this.rng, g = this.groundB, m = this.markB;
+    this.sidewalkRing(r);
+    const L = { x0: r.x0 + WALK, x1: r.x1 - WALK, z0: r.z0 + WALK, z1: r.z1 - WALK };
+    g.quadH(L.x0, L.z0, L.x1, L.z1, CURB, '#4f8c3a');
+    this.rect(L.x0, L.z0, L.x1, L.z1, '#4f8c3a');
+    const lake = { x: L.x0 + 200, z: L.z0 + 370, r: 70 }, pond = { x: L.x0 + 70, z: L.z0 + 110, r: 22 };
+    const meadow = { x: L.x0 + 290, z: L.z0 + 150, r: 85 };
+    for (const w of [lake, pond]) {
+      m.prism(w.x, CURB, w.z, w.r, 0.05, 28, '#3f86b8');
+      this.colliders.addCircle(w.x, w.z, w.r - 1, 2);
+      this.mapCircles.push([w.x, w.z, w.r, '#3f86b8']);
     }
-    this.parks[bi + ',' + bj] = { x: cx, z: cz, pond: { x: qx, z: qz, r: pr } };
-    this.backyards.push({ x: cx + (qx < cx ? 25 : -25), z: cz + (qz < cz ? 25 : -25), w: 30 });
+    // Loop drive and a cross path.
+    const path = '#c8b98f', i = 28, pw = 2.5;
+    const strips = [
+      [L.x0 + i, L.z0 + i, L.x1 - i, L.z0 + i + pw], [L.x0 + i, L.z1 - i - pw, L.x1 - i, L.z1 - i],
+      [L.x0 + i, L.z0 + i, L.x0 + i + pw, L.z1 - i], [L.x1 - i - pw, L.z0 + i, L.x1 - i, L.z1 - i],
+      [L.x0, (L.z0 + L.z1) / 2 - 1.5, L.x1, (L.z0 + L.z1) / 2 + 1.5],
+    ];
+    for (const [a, b2, c, d] of strips) {
+      m.quadH(a, b2, c, d, CURB + 0.01, path);
+      this.rect(a, b2, c, d, path);
+    }
+    const onPath = (x, z) => strips.some(([a, b2, c, d]) => x > a - 2 && x < c + 2 && z > b2 - 2 && z < d + 2);
+    for (let k = 0; k < 900; k++) {
+      const x = rng.range(L.x0 + 2, L.x1 - 2), z = rng.range(L.z0 + 2, L.z1 - 2);
+      if (onPath(x, z) || [lake, pond].some((w) => Math.hypot(x - w.x, z - w.z) < w.r + 5)) continue;
+      if (Math.hypot(x - meadow.x, z - meadow.z) < meadow.r) continue;
+      this.addTree(x, z, rng, rng.range(1, 1.4));
+    }
+    const b = this.chunkB(lake.x, lake.z);
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2, bx = lake.x + Math.cos(a) * (lake.r + 4), bz = lake.z + Math.sin(a) * (lake.r + 4);
+      b.box(bx, CURB, bz, 2, 0.5, 0.6, '#7a5233');
+    }
+    this.parks.prospect = { x: lake.x - lake.r - 8, z: lake.z, lake };
+    this.parks.watch = { x: meadow.x, z: meadow.z };
+    for (const [x, z] of [[L.x0 + 40, L.z1 - 40], [L.x1 - 40, L.z0 + 60], [L.x1 - 50, L.z1 - 60], [lake.x + 90, lake.z - 80]]) {
+      this.backyards.push({ x, z, w: 30 });
+    }
   }
 
   genIndustrial(L, rng) {
-    for (let pi = 0; pi < 2; pi++) {
-      for (let pj = 0; pj < 2; pj++) {
-        const px = L.x0 + pi * 50 + 25, pz = L.z0 + pj * 50 + 25;
-        const w = rng.range(34, 42), d = rng.range(28, 38), h = rng.range(8, 12);
-        const c = rng.pick(['#8d9196', '#9a7f66', '#6f7f8f', '#8a8470']);
-        this.addBuilding(px, pz, w, h, d, c, WIN_WARE);
-        const b = this.chunkB(px, pz);
-        b.box(px, CURB + h, pz, w - 2, 1.2, 3, shade(c, 0.85));
-        b.box(px - w / 2 - 0.05, CURB, pz, 0.1, 4.5, 6, '#55585c');
-      }
+    const n = 4, pw = (L.x1 - L.x0) / n;
+    for (let k = 0; k < n; k++) {
+      const px = L.x0 + (k + 0.5) * pw, pz = (L.z0 + L.z1) / 2;
+      const w = rng.range(36, pw - 6), d = rng.range(44, 64), h = rng.range(8, 13);
+      const c = rng.pick(['#8d9196', '#9a7f66', '#6f7f8f', '#8a8470', '#8a3f2f']);
+      this.addBuilding(px, pz, w, h, d, c, WIN_WARE);
+      const b = this.chunkB(px, pz);
+      b.box(px, CURB + h, pz, w - 2, 1.2, 3, shade(c, 0.85));
+      b.box(px, CURB, pz - d / 2 - 0.05, 6, 4.5, 0.1, '#55585c');
     }
     const cols = ['#b5462f', '#2f6db5', '#3f8a4a', '#c9a227'];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const x = rng.range(L.x0 + 4, L.x1 - 10), z = rng.pick([L.z0 + 1.6, L.z1 - 1.6]);
-      if (Math.abs(x - (L.x0 + L.x1) / 2) < 8) continue;
       this.addBuilding(x, z, 6, 2.6, 2.4, rng.pick(cols), null);
     }
   }
 
   addTree(x, z, rng, scale = 1) {
     const s = rng.range(0.8, 1.3) * scale;
-    this.trees.push({ x, z, s, pine: rng.chance(0.25), c: rng.int(0, 3) });
+    this.trees.push({ x, z, s, pine: rng.chance(0.15), c: rng.int(0, 3) });
     this.colliders.addCircle(x, z, 0.35 * s, 4);
   }
 
   genRoadMarkings() {
-    const m = this.markB, Y = 0.01, yel = '#d8c060', wht = '#e4e4dc';
-    for (let i = 0; i < NROADS; i++) {
-      const c = roadPos(i);
-      for (let j = 0; j < NBLOCKS; j++) {
-        const a = roadPos(j) + ROAD / 2 + 2, b = roadPos(j + 1) - ROAD / 2 - 2;
-        for (let t = a; t < b - 3; t += 6) {
-          m.quadH(c - 0.1, t, c + 0.1, t + 3, Y, yel);
-          m.quadH(t, c - 0.1, t + 3, c + 0.1, Y, yel);
+    const m = this.markB, Y = 0.01, yel = '#d8c060', wht = '#e4e4dc', e = ROAD / 2 + 2;
+    for (let i = 0; i < NAX; i++) {
+      for (let j = 0; j < NSZ; j++) {
+        const x = roadX(i), z = roadZ(j);
+        if (segExists(i, j, 0, 1)) {
+          // Avenues get a double yellow line; Main Street gets it too, plus crosswalks.
+          const a = z + e, b = roadZ(j + 1) - e;
+          m.quadH(x - 0.3, a, x - 0.12, b, Y, yel);
+          m.quadH(x + 0.12, a, x + 0.3, b, Y, yel);
         }
-      }
-    }
-    // Crosswalks downtown.
-    for (let i = 7; i <= 12; i++) {
-      for (let j = 7; j <= 12; j++) {
-        const x = roadPos(i), z = roadPos(j), o = ROAD / 2 + 1.5;
-        for (let s = -ROAD / 2 + 1; s < ROAD / 2 - 0.5; s += 1.4) {
-          m.quadH(x + s, z - o - 1.2, x + s + 0.7, z - o + 1.2, Y, wht);
-          m.quadH(x + s, z + o - 1.2, x + s + 0.7, z + o + 1.2, Y, wht);
-          m.quadH(x - o - 1.2, z + s, x - o + 1.2, z + s + 0.7, Y, wht);
-          m.quadH(x + o - 1.2, z + s, x + o + 1.2, z + s + 0.7, Y, wht);
+        if (segExists(i, j, 1, 0)) {
+          const a = x + e, b = roadX(i + 1) - e;
+          for (let t = a; t < b - 3; t += 6) m.quadH(t, z - 0.1, t + 3, z + 0.1, Y, yel);
+        }
+        if (Math.abs(i - MAIN_I) <= 0 || (i >= 3 && i <= 6 && j <= 3)) {
+          const o = ROAD / 2 + 1.5;
+          for (let s = -ROAD / 2 + 1; s < ROAD / 2 - 0.5; s += 1.4) {
+            m.quadH(x + s, z - o - 1.2, x + s + 0.7, z - o + 1.2, Y, wht);
+            m.quadH(x + s, z + o - 1.2, x + s + 0.7, z + o + 1.2, Y, wht);
+            m.quadH(x - o - 1.2, z + s, x - o + 1.2, z + s + 0.7, Y, wht);
+            m.quadH(x + o - 1.2, z + s, x + o + 1.2, z + s + 0.7, Y, wht);
+          }
         }
       }
     }
   }
 
   genLamps() {
-    const off = ROAD / 2 + 0.6;
-    for (let i = 0; i < NROADS; i++) {
-      const c = roadPos(i);
-      for (let j = 0; j < NBLOCKS; j++) {
-        [18, 53, 88].forEach((t, k) => {
-          const along = roadPos(j) + ROAD / 2 + t;
-          const side = (k + i + j) % 2 ? 1 : -1;
-          if (Math.abs(c + side * off) < HALF) this.lamps.push({ x: c + side * off, z: along, rot: side > 0 ? Math.PI : 0 });
-          const side2 = (k + i + j + 1) % 2 ? 1 : -1;
-          if (Math.abs(c + side2 * off) < HALF)
-            this.lamps.push({ x: along, z: c + side2 * off, rot: side2 > 0 ? Math.PI / 2 : -Math.PI / 2 });
-        });
+    const off = ROAD / 2 + 0.6, e = ROAD / 2;
+    for (let i = 0; i < NAX; i++) {
+      for (let j = 0; j < NSZ; j++) {
+        const x = roadX(i), z = roadZ(j);
+        if (segExists(i, j, 0, 1)) {
+          let k = 0;
+          for (let t = z + e + 12; t < roadZ(j + 1) - e - 5; t += 38, k++) {
+            const side = (k + i + j) % 2 ? 1 : -1;
+            if (Math.abs(x + side * off) < HALF) this.lamps.push({ x: x + side * off, z: t, rot: side > 0 ? Math.PI : 0 });
+          }
+        }
+        if (segExists(i, j, 1, 0)) {
+          let k = 0;
+          for (let t = x + e + 17; t < roadX(i + 1) - e - 5; t += 38, k++) {
+            const side = (k + i + j) % 2 ? 1 : -1;
+            if (Math.abs(z + side * off) < HALF) this.lamps.push({ x: t, z: z + side * off, rot: side > 0 ? Math.PI / 2 : -Math.PI / 2 });
+          }
+        }
       }
     }
   }
@@ -462,17 +595,18 @@ export class World {
   genBoundary() {
     const rng = this.rng, E = HALF + 18;
     for (let t = -E; t <= E; t += 7) {
-      for (const [x, z] of [[t, -E], [t, E], [-E, t], [E, t]]) {
+      for (const [x, z] of [[t, -E], [t, E], [E, t]]) {
         this.trees.push({ x: x + rng.range(-2, 2), z: z + rng.range(-2, 2), s: rng.range(1.2, 1.8), pine: rng.chance(0.6), c: rng.int(0, 3) });
       }
     }
-    // Rolling hills outside the boundary so the world edge doesn't look like a cliff.
+    // Rolling hills outside the boundary so the edge doesn't look like a cliff (none over the river).
     this.hills = [];
     for (let t = -HALF - 200; t <= HALF + 200; t += 60) {
-      for (let side = 0; side < 4; side++) {
+      for (let side = 0; side < 3; side++) {
         const r = rng.range(40, 90), off = HALF + 30 + r + rng.range(0, 90), h = rng.range(20, 60);
         const along = t + rng.range(-20, 20);
-        const [x, z] = [[along, -off], [along, off], [-off, along], [off, along]][side];
+        const [x, z] = [[along, -off], [along, off], [off, along]][side];
+        if (x < -HALF) continue;
         this.hills.push({ x, z, r, h });
       }
     }
@@ -492,7 +626,9 @@ export class World {
     const marks = new THREE.Mesh(this.markB.build(), this.markMat);
     marks.receiveShadow = true;
     this.scene.add(marks);
-    this.groundB = this.markB = null;
+    const signs = new THREE.Mesh(this.signB.build(), new THREE.MeshBasicMaterial({ map: this.atlas.tex }));
+    this.scene.add(signs);
+    this.groundB = this.markB = this.signB = null;
     this.chunks.clear();
 
     this.buildTrees();
@@ -591,6 +727,8 @@ export class World {
     x.fillStyle = '#3f6a30';
     x.fillRect(0, 0, S, S);
     const E = HALF + ROAD / 2;
+    x.fillStyle = '#3d6f8f';
+    x.fillRect(0, 0, p(-E - 3), S);
     x.fillStyle = '#2b2c30';
     x.fillRect(p(-E), p(-E), E * 2 * MAP_PX, E * 2 * MAP_PX);
     for (const [x0, z0, x1, z1, col] of this.mapRects) {
@@ -621,4 +759,3 @@ export function shade(hex, f) {
   return '#' + c.getHexString();
 }
 
-export const nodePos = (i, j) => ({ x: roadPos(i), z: roadPos(j) });

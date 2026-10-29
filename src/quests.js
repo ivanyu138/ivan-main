@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { nodePos, NROADS, LANE } from './world.js';
+import { nodePos, segExists, LANE, MAIN_I } from './world.js';
 import { RNG, clamp } from './util.js';
 
 const rng = new RNG(Date.now() & 0xffff);
@@ -25,9 +25,11 @@ function raceRoute(start, n) {
   for (let k = 0; k < n; k++) {
     const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dz]) => dx !== -dir[0] || dz !== -dir[1]);
     for (let t = 0; t < 20; t++) {
-      const d = rng.pick(opts), len = rng.int(1, 3);
+      const d = rng.pick(opts), len = d[0] ? 1 : rng.int(2, 4);
+      let ok = true;
+      for (let s = 0; s < len; s++) ok = ok && segExists(i + d[0] * s, j + d[1] * s, d[0], d[1]);
+      if (!ok) continue;
       const ni = i + d[0] * len, nj = j + d[1] * len;
-      if (ni < 1 || nj < 1 || ni > NROADS - 2 || nj > NROADS - 2) continue;
       i = ni;
       j = nj;
       dir = d;
@@ -43,14 +45,14 @@ export const QUESTS = {
     title: 'Welcome to Maple Heights', giver: 'rosa', level: 1,
     intro: [
       "Well, hello there, kitty! A new resident? Welcome to Maple Heights. I'm Rosa, the mayor.",
-      "Why don't you get to know the place? Pop into the Corner Mart and Vic's Garage, then come tell me what you think.",
+      "Why don't you get to know the place? Walk down Main Street: pop into the Corner Bodega and Vic's Garage, then come tell me what you think.",
     ],
     outro: [
       "See? Friendly folks. Here's a little something to get you started.",
       "Mrs. Hendricks down south was looking for help, and Tony at the pizza place is always short a driver.",
     ],
     stages: [
-      { type: 'goto', text: 'Visit the Corner Mart', at: (g) => g.world.pois.mart.door, r: 4 },
+      { type: 'goto', text: 'Visit the Corner Bodega', at: (g) => g.world.pois.mart.door, r: 4 },
       { type: 'goto', text: "Visit Vic's Garage", at: (g) => g.world.pois.garage.door, r: 4 },
       { type: 'talk', text: 'Return to Mayor Rosa', npc: 'rosa' },
     ],
@@ -115,14 +117,14 @@ export const QUESTS = {
       {
         type: 'goto', text: 'Get a car and drive to the starting line', r: 8, vehicle: true,
         setup: (g, q) => {
-          q.data.start = { x: nodePos(10, 11).x + 30, z: nodePos(10, 11).z + LANE };
+          q.data.start = { x: nodePos(MAIN_I, 12).x + LANE, z: g.world.pois.garage.door.z };
         },
         at: (g, q) => q.data.start,
       },
       {
         type: 'route', text: 'RACE! Hit every checkpoint', label: 'Checkpoint', r: 9, vehicle: true,
         setup: (g, q) => {
-          q.data.points = raceRoute([11, 11], 8);
+          q.data.points = raceRoute([MAIN_I, 12], 8);
           let total = 0, prev = q.data.start;
           for (const p of q.data.points) {
             total += Math.abs(p.x - prev.x) + Math.abs(p.z - prev.z);
@@ -138,20 +140,20 @@ export const QUESTS = {
   watch: {
     title: 'Neighborhood Watch', giver: 'daniels', level: 3,
     intro: [
-      "Got a situation. A gang of vandals has been trashing Maple Park, east of Old Pete's spot.",
+      "Got a situation. A gang of vandals has been trashing the meadow in Maple Park.",
       "I'm short-staffed. Head over there and run them off. Don't get yourself hurt.",
     ],
     outro: ["The park's quiet again. The neighborhood owes you one."],
     stages: [
-      { type: 'goto', text: 'Head to the east side of Maple Park', at: (g) => g.world.parks['13,13'], r: 30 },
+      { type: 'goto', text: 'Head to the meadow in Maple Park', at: (g) => g.world.parks.watch, r: 40 },
       {
         type: 'defeat', text: 'Run off the vandals', tag: 'watch',
         setup: (g) => {
-          const c = g.world.parks['13,13'];
+          const c = g.world.parks.watch;
           g.npcs.clearEnemies('watch');
           for (let i = 0; i < 3; i++) g.npcs.spawnEnemy(c.x + rng.range(-12, 12), c.z + 6 + rng.range(-4, 4), 'watch');
         },
-        at: (g) => g.world.parks['13,13'],
+        at: (g) => g.world.parks.watch,
       },
       { type: 'talk', text: 'Report back to Officer Daniels', npc: 'daniels' },
     ],

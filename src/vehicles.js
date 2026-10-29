@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MeshBuilder } from './geo.js';
-import { NROADS, ROAD, LANE, HALF, PITCH, nodePos, groundHeight } from './world.js';
+import { NAX, NSZ, PX, PZ, ROAD, LANE, HALF, nodePos, groundHeight, segExists } from './world.js';
 import { angDiff, clamp, RNG } from './util.js';
 
 export const SPECS = {
@@ -206,7 +206,7 @@ export class Traffic {
     };
     if (t >= 0) {
       const sx = A.x + dx * e + rx * LANE, sz = A.z + dz * e + rz * LANE;
-      const segLen = PITCH - 2 * e;
+      const segLen = (dx ? PX : PZ) - 2 * e;
       car.pos.set(sx + dx * segLen * t, 0, sz + dz * segLen * t);
       car.heading = Math.atan2(dx, dz);
     }
@@ -214,7 +214,7 @@ export class Traffic {
 
   chooseNext(car) {
     const a = car.ai, ni = a.i + a.dx, nj = a.j + a.dz;
-    const ok = (dx, dz) => ni + dx >= 0 && nj + dz >= 0 && ni + dx < NROADS && nj + dz < NROADS;
+    const ok = (dx, dz) => segExists(ni, nj, dx, dz);
     const opts = [];
     if (ok(a.dx, a.dz)) opts.push([a.dx, a.dz], [a.dx, a.dz]);
     if (ok(a.dz, -a.dx)) opts.push([a.dz, -a.dx]);
@@ -229,11 +229,10 @@ export class Traffic {
     const p = this.game.player ? this.game.player.pos : { x: 0, z: 0 };
     const rng = this.rng;
     for (let k = 0; k < 40; k++) {
-      const i = clamp(Math.round((p.x + HALF) / PITCH) + rng.int(-3, 3), 0, NROADS - 1);
-      const j = clamp(Math.round((p.z + HALF) / PITCH) + rng.int(-3, 3), 0, NROADS - 1);
-      const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(
-        ([dx, dz]) => i + dx >= 0 && j + dz >= 0 && i + dx < NROADS && j + dz < NROADS,
-      );
+      const i = clamp(Math.round((p.x + HALF) / PX) + rng.int(-1, 1), 0, NAX - 1);
+      const j = clamp(Math.round((p.z + HALF) / PZ) + rng.int(-3, 3), 0, NSZ - 1);
+      const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dz]) => segExists(i, j, dx, dz));
+      if (!dirs.length) continue;
       const [dx, dz] = rng.pick(dirs);
       const t = rng.range(0, 0.9);
       const save = car.pos.clone(), sh = car.heading;

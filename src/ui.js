@@ -337,20 +337,40 @@ export class UI {
     x.drawImage(g.world.mapCanvas, src, src, E * 2 * MAP_PX, E * 2 * MAP_PX, 0, 0, W, W);
     x.textAlign = 'center';
     x.textBaseline = 'middle';
-    Object.values(g.world.pois).forEach((poi, i) => {
+    const label = (text, lx, ly, size = 11, color = '#fff') => {
+      x.font = `bold ${size}px monospace`;
+      x.lineWidth = 3;
+      x.strokeStyle = '#000';
+      x.strokeText(text, lx, ly);
+      x.fillStyle = color;
+      x.fillText(text, lx, ly);
+    };
+    // Shops sit on both sides of Main Street, so label each one on its own side.
+    for (const poi of Object.values(g.world.pois)) {
       const [mx, my] = to(poi.door.x, poi.door.z);
-      const ly = my + (i % 2 ? 13 : -12);
       x.fillStyle = '#000';
       x.fillRect(mx - 5, my - 5, 10, 10);
       x.fillStyle = poi.color;
       x.fillRect(mx - 4, my - 4, 8, 8);
-      x.font = 'bold 11px monospace';
-      x.lineWidth = 3;
-      x.strokeStyle = '#000';
-      x.strokeText(poi.name, mx, ly);
-      x.fillStyle = '#fff';
-      x.fillText(poi.name, mx, ly);
-    });
+      const west = poi.door.x < 0;
+      x.textAlign = west ? 'right' : 'left';
+      label(poi.name, mx + (west ? -9 : 9), my);
+    }
+    x.textAlign = 'center';
+    const park = g.world.parks.prospect.lake;
+    label('MAPLE PARK', to(park.x, park.z - 130)[0], to(park.x, park.z - 130)[1], 12, '#cfe8b0');
+    x.save();
+    const [rx, ry] = to(-HALF - 22, 0);
+    x.translate(rx, ry);
+    x.rotate(-Math.PI / 2);
+    label('EAST RIVER', 0, 0, 12, '#bfe0ff');
+    x.restore();
+    const [sx, sy] = to(0, HALF - 120);
+    x.save();
+    x.translate(sx, sy);
+    x.rotate(-Math.PI / 2);
+    label('MAIN ST', 0, 0, 12, '#ffd34d');
+    x.restore();
     for (const n of g.npcs.list) {
       const m = g.quests.markerFor(n.id);
       if (!m) continue;

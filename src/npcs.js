@@ -7,40 +7,40 @@ export const NPC_DEFS = {
   rosa: {
     name: 'Mayor Rosa',
     look: { skin: '#c68b5e', hair: '#1a1a1a', shirt: '#7a2a4a', pants: '#2a2a3a' },
-    at: (w) => ({ x: w.pois.townhall.door.x + 4, z: w.pois.townhall.door.z - 1.5 }),
+    at: (w) => ({ x: w.pois.townhall.door.x - 2, z: w.pois.townhall.door.z + 3.5 }),
     chat: ['Lovely day in Maple Heights, isn\'t it?', 'The fountain was my idea. Don\'t tell anyone it leaks.', 'Vote Rosa! ...Oh, the election\'s over? Old habits.'],
   },
   hendricks: {
     name: 'Mrs. Hendricks',
     look: { skin: '#f3d7c0', hair: '#d8d8d8', shirt: '#9ab88d', pants: '#5a4a3a' },
     at: () => {
-      const L = lotRect(9, 12);
-      return { x: L.x0 + 46, z: L.z0 + 2.5 };
+      const L = lotRect(6, 5);
+      return { x: L.x0 + 60, z: L.z0 - 1.2 };
     },
     chat: ['Have you tried the cherry pie at Lou\'s? Divine.', 'In my day, cars didn\'t go this fast.', 'Whiskers sends her regards. Probably.'],
   },
   tony: {
     name: 'Tony',
     look: { skin: '#e0ac85', hair: '#2a1d14', shirt: '#e8e8e8', pants: '#3a3a3a', hat: '#c94a4a' },
-    at: (w) => ({ x: w.pois.pizza.door.x + 4, z: w.pois.pizza.door.z }),
+    at: (w) => ({ x: w.pois.pizza.door.x, z: w.pois.pizza.door.z + 4 }),
     chat: ['Best pizza in town. Only pizza in town, but still.', 'You hungry? Slices inside.'],
   },
   vic: {
     name: 'Vic',
     look: { skin: '#8d5a3b', hair: '#1a1a1a', shirt: '#3a4a5a', pants: '#2a3448', hat: '#2a2a2a' },
-    at: (w) => ({ x: w.pois.garage.door.x + 4, z: w.pois.garage.door.z }),
+    at: (w) => ({ x: w.pois.garage.door.x, z: w.pois.garage.door.z + 4 }),
     chat: ['Engines are poetry, man.', 'If you break it, I can fix it. For a price.'],
   },
   daniels: {
     name: 'Officer Daniels',
     look: { skin: '#c68b5e', hair: '#2a1d14', shirt: '#2a3a6a', pants: '#1f1f24', hat: '#1a2448' },
-    at: (w) => ({ x: w.pois.police.door.x + 4, z: w.pois.police.door.z }),
+    at: (w) => ({ x: w.pois.police.door.x, z: w.pois.police.door.z + 4 }),
     chat: ['Keep your nose clean.', 'Slow down out there. Kids play on these streets.'],
   },
   pete: {
     name: 'Old Pete',
     look: { skin: '#f1c9a5', hair: '#e8e8e8', shirt: '#6a5a3a', pants: '#4a4a3a', hat: '#3f7a35' },
-    at: (w) => ({ x: w.parks['12,13'].x + 4, z: w.parks['12,13'].z + 3 }),
+    at: (w) => ({ x: w.parks.prospect.x, z: w.parks.prospect.z }),
     chat: ['The gnomes are out there. Watching.', 'Back in my day this was all cornfields.'],
   },
 };

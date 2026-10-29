@@ -1,6 +1,6 @@
 # Maple Heights
 
-A small open-world RPG in the browser. You play as one of three cats: Toro (ginger), Uni (brown tabby) or Phantom (calico tabby), in third person with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The world is a procedurally generated neighborhood of about 2 square miles (2.28 km × 2.28 km). It has a downtown core, a commercial ring, suburbs, parks and an industrial corner.
+A small open-world RPG in the browser. You play as one of three cats in third person, with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The cats are Toro (a golden shaded British Shorthair), Uni (a brown tabby with a white belly) and Phantom (a mixed-color tabby with a two-tone face). The world is a procedurally generated, Brooklyn-style neighborhood of about 2 square miles (2.28 km × 2.28 km).
 
 Built with [three.js](https://threejs.org) and [Vite](https://vitejs.dev). There are no asset files: the geometry, textures and sounds are all generated in code.
 
@@ -37,12 +37,16 @@ npm run build      # static build in dist/
 
 ## What's in it
 
-- **World**: a 19×19 grid of blocks with sidewalks, lane markings, street lamps, about 4,000 houses, downtown towers, shops with awnings, parks with ponds, and warehouses. There's a day/night cycle (16 real minutes per day), and windows light up at night.
+- **World**: a Brooklyn-style grid of long blocks (228 m × 95 m). Avenues run north–south and narrow side streets run east–west.
+  - Residential streets are lined with rows of brownstones and brick rowhouses with stoops and cornices, tree-lined sidewalks, and backyards in the middle of each block. Other avenues have five- and six-story apartment buildings with fire escapes.
+  - **Main Street** runs down the middle with shops and restaurants on both sides and apartments above. All the game's shops are on it.
+  - There's a downtown with Borough Hall to the north, the big Maple Park with a lake and meadow, a few playgrounds, and an industrial waterfront on the East River.
+  - There's a day/night cycle (16 real minutes per day), and windows light up at night.
 - **Cats**: pick your cat on the select screen when you start a new game, or switch later with **CHANGE CAT** on the title screen. Cats sprint fast, jump high and sit down when left idle. Each has its own meow. **Scratch** is your attack. **Meow** makes passers-by stop and look, and sometimes earns you a tip; Whiskers answers if she's in earshot. **Hiss** puffs you up, sends pedestrians running, and knocks back and freezes nearby vandals. Yes, they can still drive.
 - **Traffic**: about 45 AI cars drive in the right-hand lane, turn at intersections, and brake for you and for each other. You can steal any of them.
 - **Pedestrians**: they walk the sidewalks, flee when you punch them or honk, and get knocked over if you drive into them (which costs reputation).
 - **RPG systems**: XP and levels, HP and stamina, money, reputation, and four skills (Strength, Stamina, Driving, Charisma). You get skill points on level-up, and the gym also trains skills.
-- **Shops**: Corner Mart, Lou's Diner and Tony's Pizza sell consumables. St. Mercy Clinic heals you. Iron Gym trains skills. Vic's Garage repairs cars and sells them; you can buy your own sports car for $1500.
+- **Shops** (all on Main Street): the Corner Bodega, Lou's Diner and Tony's Pizza sell consumables. St. Mercy Clinic heals you. Iron Gym trains skills. Vic's Garage repairs cars and sells them; you can buy your own sports car for $1500.
 - **Quests** (look for `!` above NPCs and on the minimap):
   - *Welcome to Maple Heights* (Mayor Rosa): tour the neighborhood
   - *Where Is Whiskers?* (Mrs. Hendricks): search backyards for a lost cat

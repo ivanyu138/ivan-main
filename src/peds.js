@@ -1,5 +1,5 @@
 import { makeHumanoid, animateHumanoid, randomLook } from './characters.js';
-import { blockRect, NBLOCKS, HALF, PITCH, groundHeight } from './world.js';
+import { blockRect, blockAt, isParkBlock, NBX, NBZ, HALF, PX, PZ, groundHeight } from './world.js';
 import { RNG, clamp, angDiff, mod } from './util.js';
 
 const INSET = 1.4;
@@ -54,8 +54,9 @@ export class Pedestrians {
     const pl = this.game.player ? this.game.player.pos : { x: 0, z: 0 };
     const rng = this.rng;
     for (let k = 0; k < 30; k++) {
-      const bi = clamp(Math.floor((pl.x + HALF) / PITCH) + rng.int(-2, 2), 0, NBLOCKS - 1);
-      const bj = clamp(Math.floor((pl.z + HALF) / PITCH) + rng.int(-2, 2), 0, NBLOCKS - 1);
+      const bi = clamp(Math.floor((pl.x + HALF) / PX) + rng.int(-1, 1), 0, NBX - 1);
+      const bj = clamp(Math.floor((pl.z + HALF) / PZ) + rng.int(-2, 2), 0, NBZ - 1);
+      if (isParkBlock(bi, bj)) continue;
       const R = this.ringOf(bi, bj), s = rng.range(0, R.P);
       const [x, z] = this.ringPoint(R, s);
       const d = Math.hypot(x - pl.x, z - pl.z);
@@ -76,7 +77,7 @@ export class Pedestrians {
     let far = this.list[0];
     for (const p of this.list) if (Math.hypot(p.pos.x - pl.x, p.pos.z - pl.z) > Math.hypot(far.pos.x - pl.x, far.pos.z - pl.z)) far = p;
     far.pos.set(x, 0, z);
-    const b = [clamp(Math.floor((x + HALF) / PITCH), 0, NBLOCKS - 1), clamp(Math.floor((z + HALF) / PITCH), 0, NBLOCKS - 1)];
+    const b = blockAt(x, z);
     far.ring = this.ringOf(b[0], b[1]);
     this.flee(far, fromX, fromZ, 6);
   }

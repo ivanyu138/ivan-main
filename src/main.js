@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { World, CURB, groundHeight, roadPos } from './world.js';
+import { World, CURB, groundHeight } from './world.js';
 import { DayNight } from './sky.js';
 import { Input } from './input.js';
 import { UI } from './ui.js';
@@ -72,9 +72,9 @@ class Game {
 
   toSpawn() {
     const p = this.world.plaza;
-    this.player.pos.set(p.x, CURB, p.z + 18);
-    this.player.facing = 0;
-    this.cam.yaw = Math.PI;
+    this.player.pos.set(p.x + 20, CURB, p.z);
+    this.player.facing = Math.PI / 2;
+    this.cam.yaw = -Math.PI / 2;
   }
 
   resize() {
@@ -340,7 +340,8 @@ class Game {
         pay();
         for (const c of this.traffic.cars) c.owned = false;
         const sports = s.service === 'buy_sports';
-        const c = this.traffic.addCar(sports ? 'sports' : 'sedan', sports ? '#e03030' : '#5d7d9e', garage.x + 10, roadPos(11) + 4.5, Math.PI / 2);
+        const curb = this.world.pois.garage.curb;
+        const c = this.traffic.addCar(sports ? 'sports' : 'sedan', sports ? '#e03030' : '#5d7d9e', curb.x, curb.z, curb.h);
         c.owned = true;
         ui.closePanel();
         ui.toast(`Your new ${c.spec.name} is parked out front!`, '#ffd34d');
@@ -364,9 +365,10 @@ class Game {
     const door = this.world.pois.clinic.door, r = this.rpg;
     this.dead = false;
     this.ui.showDead(false);
+    const poi = this.world.pois.clinic, out = Math.sign(door.x - poi.cx);
     this.player.pos.set(door.x, CURB, door.z - 1);
-    this.player.facing = Math.PI;
-    this.cam.yaw = 0;
+    this.player.facing = -out * Math.PI / 2;
+    this.cam.yaw = out * Math.PI / 2;
     r.hp = r.maxHp;
     const lost = Math.floor(r.money * 0.1);
     r.money -= lost;
