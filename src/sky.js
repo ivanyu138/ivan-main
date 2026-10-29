@@ -50,7 +50,7 @@ export class DayNight {
     this.sun.target.position.set(fx, 0, fz);
     this.sun.intensity = 0.25 + 1.55 * day;
     this.sun.color.set(day > 0.5 ? '#fff3dd' : dusk > 0.3 ? '#ffb27a' : '#9fb4ff');
-    this.hemi.intensity = 0.45 + 0.55 * day;
+    this.hemi.intensity = 0.5 + 0.75 * day;
     this.hemi.color.set(day > 0.3 ? '#cfe4ff' : '#7a8ad0');
     this.night = 1 - day;
     this.game.world.setNight(smoothstep(0.35, 0.8, this.night));

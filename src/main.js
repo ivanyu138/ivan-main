@@ -12,6 +12,7 @@ import { NPCs } from './npcs.js';
 import { Pickups } from './pickups.js';
 import { Quests, QUESTS } from './quests.js';
 import { Sfx } from './audio.js';
+import { CatSelect } from './select.js';
 
 const SAVE_KEY = 'mapleheights_save_v1';
 const PX_KEY = 'mapleheights_px';
@@ -56,6 +57,7 @@ class Game {
     this.npcs = new NPCs(this);
     this.pickups = new Pickups(this);
     this.quests = new Quests(this);
+    this.select = new CatSelect();
 
     this.toSpawn();
     if (!this.load()) this.pickups.initGnomes([]);
@@ -80,6 +82,7 @@ class Game {
     this.renderer.setSize(Math.max(1, Math.floor(w / s)), Math.max(1, Math.floor(h / s)), false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.select.resize(w / h);
   }
 
   // ------------------------------------------------------------ menus
@@ -96,20 +99,34 @@ class Game {
         if (r && r.catch) r.catch(() => {});
       } catch { /* pointer lock unavailable: mouse-drag look still works */ }
     };
-    const hud = document.getElementById('ui');
+    const hud = document.getElementById('ui'), changeCat = document.getElementById('btn-cat');
     hud.style.display = 'none';
-    play.onclick = () => {
+    changeCat.style.display = hasSave ? '' : 'none';
+    const start = (first) => {
       title.style.display = 'none';
       hud.style.display = '';
       this.sfx.unlock();
       this.state = 'play';
       lock();
-      if (!hasSave) this.ui.toast('Talk to Mayor Rosa (the yellow !) to get started', '#ffd34d');
+      if (first) this.ui.toast('Talk to Mayor Rosa (the yellow !) to get started', '#ffd34d');
     };
+    const pickCat = (first) => {
+      title.style.display = 'none';
+      this.sfx.unlock();
+      this.state = 'select';
+      this.select.open(this.rpg.cat, (id) => {
+        this.rpg.cat = id;
+        this.player.setCat(id);
+        this.save();
+        start(first);
+      });
+    };
+    play.onclick = () => (hasSave ? start(false) : pickCat(true));
     fresh.onclick = () => {
       this.newGame();
-      play.onclick();
+      pickCat(true);
     };
+    changeCat.onclick = () => pickCat(false);
     pause.onclick = () => {
       pause.style.display = 'none';
       this.state = 'play';
@@ -172,6 +189,7 @@ class Game {
       c.hp = d.car.hp ?? 100;
     }
     this.pickups.initGnomes(this.rpg.gnomes);
+    this.player.setCat(this.rpg.cat || 'ginger');
     return true;
   }
 
@@ -437,6 +455,11 @@ class Game {
       this.peds.update(dt);
       this.camera.position.set(p.x + Math.cos(a) * 150, 125, p.z + Math.sin(a) * 150);
       this.camera.lookAt(p.x, 5, p.z);
+    } else if (this.state === 'select') {
+      this.select.update(dt, this.input);
+      this.renderer.render(this.select.scene, this.select.camera);
+      this.input.endFrame();
+      return;
     } else this.sfx.setEngine(false, 0);
     this.renderer.render(this.scene, this.camera);
     this.input.endFrame();

@@ -27,7 +27,7 @@ export class CameraRig {
     this.idle = looking ? 0 : this.idle + dt;
 
     const car = p.vehicle;
-    const wantDist = car ? 9.5 : 4.8;
+    const wantDist = car ? 9.5 : 3.2;
     this.dist += (wantDist - this.dist) * Math.min(1, dt * 3);
     if (car && this.idle > 1.2 && Math.abs(car.speed) > 2) {
       const behind = car.heading + (car.speed < -1 ? 0 : Math.PI);
@@ -35,7 +35,7 @@ export class CameraRig {
       this.pitch += (0.22 - this.pitch) * Math.min(1, dt * 1.5);
     }
 
-    this.target.set(p.pos.x, p.pos.y + (car ? 1.6 : 1.55), p.pos.z);
+    this.target.set(p.pos.x, p.pos.y + (car ? 1.6 : 0.75), p.pos.z);
     if (this.first) {
       this.cur.copy(this.target);
       this.first = false;

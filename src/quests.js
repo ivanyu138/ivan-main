@@ -42,7 +42,7 @@ export const QUESTS = {
   welcome: {
     title: 'Welcome to Maple Heights', giver: 'rosa', level: 1,
     intro: [
-      "Welcome to Maple Heights! I'm Rosa, the mayor.",
+      "Well, hello there, kitty! A new resident? Welcome to Maple Heights. I'm Rosa, the mayor.",
       "Why don't you get to know the place? Pop into the Corner Mart and Vic's Garage, then come tell me what you think.",
     ],
     outro: [
@@ -60,7 +60,7 @@ export const QUESTS = {
     title: 'Where Is Whiskers?', giver: 'hendricks', level: 1,
     intro: [
       "Oh dear, oh dear. My cat Whiskers slipped out last night and hasn't come home.",
-      'She loves hiding in backyards. Could you search the blocks around here?',
+      'She loves hiding in backyards. You\'re a cat, you know all the good hiding spots. Could you look around?',
     ],
     outro: ['Whiskers! You naughty thing. Thank you so much, dear. Take this for your trouble.'],
     stages: [

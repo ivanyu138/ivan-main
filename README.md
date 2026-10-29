@@ -1,6 +1,6 @@
 # Maple Heights
 
-A small open-world RPG in the browser. You play in third person with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The world is a procedurally generated neighborhood of about 2 square miles (2.28 km × 2.28 km). It has a downtown core, a commercial ring, suburbs, parks and an industrial corner.
+A small open-world RPG in the browser. You play as one of three cats (Ginger, Tabby or Calico) in third person with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The world is a procedurally generated neighborhood of about 2 square miles (2.28 km × 2.28 km). It has a downtown core, a commercial ring, suburbs, parks and an industrial corner.
 
 Built with [three.js](https://threejs.org) and [Vite](https://vitejs.dev). There are no asset files: the geometry, textures and sounds are all generated in code.
 
@@ -24,7 +24,7 @@ npm run build      # static build in dist/
 | Mouse (or arrow keys) | orbit camera | orbit camera (auto-recenters) |
 | Shift | sprint | |
 | Space | jump | handbrake |
-| Click / J | punch | |
+| Click / J | paw swipe | |
 | E | talk / interact / enter shop | exit |
 | F | enter or carjack a car | exit |
 | H | | horn |
@@ -36,6 +36,7 @@ npm run build      # static build in dist/
 ## What's in it
 
 - **World**: a 19×19 grid of blocks with sidewalks, lane markings, street lamps, about 4,000 houses, downtown towers, shops with awnings, parks with ponds, and warehouses. There's a day/night cycle (16 real minutes per day), and windows light up at night.
+- **Cats**: pick your cat on the select screen when you start a new game, or switch later with **CHANGE CAT** on the title screen. Cats sprint fast, jump high, swipe with a paw, and sit down when left idle. Yes, they can still drive.
 - **Traffic**: about 45 AI cars drive in the right-hand lane, turn at intersections, and brake for you and for each other. You can steal any of them.
 - **Pedestrians**: they walk the sidewalks, flee when you punch them or honk, and get knocked over if you drive into them (which costs reputation).
 - **RPG systems**: XP and levels, HP and stamina, money, reputation, and four skills (Strength, Stamina, Driving, Charisma). You get skill points on level-up, and the gym also trains skills.
@@ -60,7 +61,8 @@ npm run build      # static build in dist/
 | `src/player.js`, `src/camera.js` | Character controller, chase camera |
 | `src/vehicles.js` | Car models, arcade driving physics, traffic AI |
 | `src/peds.js`, `src/npcs.js` | Ambient pedestrians, quest givers, enemies |
-| `src/characters.js` | Blocky humanoid model and animation |
+| `src/cat.js`, `src/select.js` | The three playable cats, cat-select screen |
+| `src/characters.js` | Blocky humanoid model and animation (NPCs) |
 | `src/rpg.js`, `src/quests.js` | Stats, items, shops, quest definitions and state machine |
 | `src/ui.js` | HUD, minimap, dialog, panels |
 | `src/sky.js`, `src/audio.js` | Day/night lighting, synthesized sound effects |

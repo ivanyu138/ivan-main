@@ -90,8 +90,28 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #f4f1e8; user
 }
 #title button:hover { background: #fff; }
 #title #btn-new { background: #9fd0ff; }
+#title #btn-cat { background: #f4b38a; }
 #title .controls { margin-top: 28px; font-size: 14px; line-height: 1.6; color: #e6e6e6; text-align: center; }
 #title .controls b { color: #ffd34d; }
+#select {
+  position: fixed; inset: 0; display: none; flex-direction: column; justify-content: space-between; align-items: center;
+  padding: 24px 16px; text-shadow: 3px 3px 0 #000; pointer-events: none;
+}
+#select h2 { margin: 0; font-size: 40px; color: #ffd34d; letter-spacing: 3px; }
+#select .bottom { display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: auto; }
+#select .cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+#select .card {
+  width: 220px; text-align: left; font: 13px "Courier New", monospace; color: #f4f1e8; background: #101624d8;
+  border: 3px solid #000; outline: 2px solid #6a6050; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px;
+}
+#select .card b { font-size: 18px; color: #fff; }
+#select .card.on { outline: 3px solid #ffd34d; background: #2a2416ee; }
+#select .k { color: #ffd34d; }
+#select #btn-start {
+  font: bold 20px "Courier New", monospace; padding: 10px 30px; background: #ffd34d; color: #1a1a1a;
+  border: 3px solid #000; cursor: pointer; box-shadow: 4px 4px 0 #000;
+}
+#select small { color: #fff; }
 #pause { display: none; font-size: 42px; font-weight: bold; cursor: pointer; }
 #pause small { font-size: 16px; color: #cfd8e6; }
 

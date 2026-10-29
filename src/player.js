@@ -1,13 +1,15 @@
-import { makeHumanoid, animateHumanoid } from './characters.js';
+import * as THREE from 'three';
+import { makeCat, animateCat } from './cat.js';
 import { groundHeight, HALF } from './world.js';
 import { angDiff, clamp } from './util.js';
 
 export class Player {
   constructor(game) {
     this.game = game;
-    this.h = makeHumanoid({ skin: '#e8b48c', hair: '#3a2512', shirt: '#2f8fd0', pants: '#2a2a3a', shoes: '#f0f0f0' });
-    game.scene.add(this.h.group);
-    this.pos = this.h.group.position;
+    this.root = new THREE.Group();
+    game.scene.add(this.root);
+    this.pos = this.root.position;
+    this.setCat('ginger');
     this.pos.set(0, 0.15, -2);
     this.vy = 0;
     this.facing = Math.PI;
@@ -17,8 +19,17 @@ export class Player {
     this.punchT = 0;
     this.punchCd = 0;
     this.vehicle = null;
-    this.radius = 0.35;
+    this.radius = 0.26;
     this.moving = false;
+    this.idleT = 0;
+    this.sit = 0;
+  }
+
+  setCat(id) {
+    if (this.cat) this.root.remove(this.cat.group);
+    this.catId = id;
+    this.cat = makeCat(id);
+    this.root.add(this.cat.group);
   }
 
   canAct() {
@@ -28,11 +39,11 @@ export class Player {
   update(dt) {
     const g = this.game, inp = g.input, rpg = g.rpg;
     if (this.vehicle) {
-      this.h.group.visible = false;
+      this.root.visible = false;
       this.pos.copy(this.vehicle.pos);
       return;
     }
-    this.h.group.visible = true;
+    this.root.visible = true;
 
     let mx = 0, mz = 0;
     if (this.canAct()) {
@@ -48,7 +59,7 @@ export class Player {
       mx /= len;
       mz /= len;
       const sprint = (inp.down('ShiftLeft') || inp.down('ShiftRight')) && rpg.stamina > 1;
-      speed = sprint ? 7.6 + 0.3 * rpg.skills.stamina : 4.2;
+      speed = sprint ? 8 + 0.35 * rpg.skills.stamina : 3.4;
       if (sprint) rpg.drainStamina(dt);
       const target = Math.atan2(mx, mz);
       this.facing += angDiff(this.facing, target) * (1 - Math.exp(-14 * dt));
@@ -58,7 +69,7 @@ export class Player {
     this.pos.z += mz * speed * dt;
 
     if (this.canAct() && inp.pressed('Space') && this.onGround) {
-      this.vy = 6.2;
+      this.vy = 6.8;
       this.onGround = false;
     }
     this.vy -= 20 * dt;
@@ -91,10 +102,13 @@ export class Player {
       if (hit) g.sfx.play('punch');
     }
 
-    this.h.group.rotation.y = this.facing;
-    const targetStride = this.onGround ? clamp(speed / 5, 0, 1.2) : 0.3;
+    this.root.rotation.y = this.facing;
+    const targetStride = this.onGround ? clamp(speed / 4, 0, 1.2) : 0.2;
     this.stride += (targetStride - this.stride) * Math.min(1, dt * 10);
-    this.phase += dt * (speed > 6 ? 13 : 9) * (speed > 0 ? 1 : 0);
-    animateHumanoid(this.h, this.phase, this.stride, this.punchT);
+    this.phase += dt * (speed > 6 ? 16 : 11) * (speed > 0 ? 1 : 0);
+    // Cats sit down when left alone for a few seconds.
+    this.idleT = speed > 0 || !this.onGround || this.punchT > 0 ? 0 : this.idleT + dt;
+    this.sit += ((this.idleT > 3 ? 1 : 0) - this.sit) * Math.min(1, dt * 5);
+    animateCat(this.cat, dt, this.phase, this.stride, this.punchT, this.sit);
   }
 }

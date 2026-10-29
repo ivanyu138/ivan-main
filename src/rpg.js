@@ -62,6 +62,7 @@ export class RPG {
     this.skills = { strength: 1, stamina: 1, driving: 1, charisma: 1 };
     this.inventory = { soda: 2 };
     this.gnomes = [];
+    this.cat = 'ginger';
     this.boostT = 0;
     this.drainT = 0;
   }
@@ -151,8 +152,8 @@ export class RPG {
   }
 
   serialize() {
-    const { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes } = this;
-    return { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes };
+    const { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat } = this;
+    return { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat };
   }
 
   load(d) {
