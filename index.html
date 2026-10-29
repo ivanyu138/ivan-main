@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Maple Heights</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="ui">
+      <div id="hud">
+        <div class="row"><span id="lvl">LV 1</span><span id="money">$0</span><span id="clock">09:00</span></div>
+        <div class="bar hp"><div class="fill"></div><span>HP</span></div>
+        <div class="bar st"><div class="fill"></div><span>STA</span></div>
+        <div class="bar xp"><div class="fill"></div><span>XP</span></div>
+      </div>
+      <canvas id="minimap" width="180" height="180"></canvas>
+      <div id="objective"></div>
+      <div id="toasts"></div>
+      <div id="prompt"></div>
+      <div id="hotbar"></div>
+      <div id="speedo"></div>
+      <div id="dialog"><div class="name"></div><div class="text"></div><div class="opts"></div></div>
+      <div id="panel"></div>
+      <div id="dead">KNOCKED OUT</div>
+    </div>
+
+    <div id="title">
+      <h1>MAPLE HEIGHTS</h1>
+      <p class="tag">a tiny open-world RPG</p>
+      <div class="buttons">
+        <button id="btn-play">PLAY</button>
+        <button id="btn-new">NEW GAME</button>
+      </div>
+      <div class="controls">
+        <div><b>WASD</b> move / drive</div>
+        <div><b>Mouse</b> look (arrow keys also work)</div>
+        <div><b>Shift</b> sprint &nbsp; <b>Space</b> jump / handbrake</div>
+        <div><b>Click</b> or <b>J</b> punch</div>
+        <div><b>E</b> talk / interact &nbsp; <b>F</b> enter / exit car</div>
+        <div><b>1-5</b> use items &nbsp; <b>H</b> horn</div>
+        <div><b>Tab</b> quests &nbsp; <b>I</b> inventory &nbsp; <b>C</b> character</div>
+        <div><b>M</b> map &nbsp; <b>P</b> pixel size &nbsp; <b>Esc</b> pause</div>
+      </div>
+    </div>
+
+    <div id="pause"><div>PAUSED</div><small>click to resume</small></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

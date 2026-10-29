@@ -1,0 +1,102 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+body { font-family: "Courier New", ui-monospace, monospace; color: #f4f1e8; user-select: none; }
+
+#game {
+  position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
+
+#ui { position: fixed; inset: 0; pointer-events: none; text-shadow: 2px 2px 0 #000; }
+
+#hud { position: absolute; top: 14px; left: 14px; width: 240px; }
+#hud .row { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; margin-bottom: 6px; }
+#money { color: #8fe27a; }
+.bar { position: relative; height: 14px; background: #0009; border: 2px solid #000; margin-bottom: 4px; }
+.bar .fill { height: 100%; width: 50%; }
+.bar span { position: absolute; left: 4px; top: -2px; font-size: 12px; font-weight: bold; }
+.bar.hp .fill { background: #d8463c; }
+.bar.st .fill { background: #e6c23a; }
+.bar.xp .fill { background: #4fa3e8; }
+
+#minimap {
+  position: absolute; left: 14px; bottom: 14px; width: 180px; height: 180px;
+  border-radius: 50%; border: 3px solid #000; background: #000; image-rendering: pixelated;
+}
+
+#objective {
+  position: absolute; top: 14px; right: 14px; max-width: 320px; text-align: right;
+  font-size: 14px; line-height: 1.35;
+}
+#objective .q { color: #ffd34d; font-weight: bold; font-size: 15px; }
+#objective .t { color: #ff7a6b; font-weight: bold; }
+
+#toasts { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); text-align: center; }
+#toasts div { font-size: 18px; font-weight: bold; margin: 4px 0; transition: opacity 0.6s; }
+
+#prompt {
+  position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+  font-size: 16px; font-weight: bold; text-align: center; white-space: pre;
+}
+
+#hotbar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+#hotbar .slot {
+  width: 64px; height: 44px; background: #0008; border: 2px solid #000; font-size: 11px;
+  padding: 3px; position: relative;
+}
+#hotbar .slot b { color: #ffd34d; }
+#hotbar .slot .n { position: absolute; right: 4px; bottom: 2px; font-size: 13px; font-weight: bold; }
+
+#speedo { position: absolute; right: 18px; bottom: 18px; text-align: right; font-weight: bold; font-size: 28px; }
+#speedo small { display: block; font-size: 13px; }
+
+#dialog {
+  position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); width: min(640px, 92vw);
+  background: #101624ee; border: 3px solid #000; outline: 2px solid #c9b77a; padding: 14px 18px; display: none;
+}
+#dialog .name { color: #ffd34d; font-weight: bold; margin-bottom: 6px; }
+#dialog .text { font-size: 16px; line-height: 1.4; min-height: 44px; }
+#dialog .opts { margin-top: 10px; color: #9fd0ff; font-size: 14px; }
+
+#panel {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, 94vw);
+  max-height: 84vh; overflow: auto; background: #101624f2; border: 3px solid #000; outline: 2px solid #c9b77a;
+  padding: 16px 20px; display: none; font-size: 14px; line-height: 1.45;
+}
+#panel h2 { margin: 0 0 10px; color: #ffd34d; font-size: 20px; }
+#panel h3 { margin: 12px 0 4px; color: #9fd0ff; font-size: 15px; }
+#panel .item { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #fff2; }
+#panel .dim { color: #8a90a0; }
+#panel .k { color: #ffd34d; font-weight: bold; }
+#panel .foot { margin-top: 12px; color: #8a90a0; font-size: 12px; }
+#panel canvas { display: block; margin: 0 auto; width: min(100%, 66vh); image-rendering: pixelated; border: 2px solid #000; }
+#panel.wide { width: min(820px, 96vw); }
+
+#dead {
+  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  font-size: 64px; font-weight: bold; color: #d8463c; background: #0007; letter-spacing: 6px;
+}
+
+#title, #pause {
+  position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(#0000, #000c); text-shadow: 3px 3px 0 #000;
+}
+#title h1 { font-size: 64px; margin: 0; color: #ffd34d; letter-spacing: 4px; }
+#title .tag { margin: 4px 0 24px; color: #cfd8e6; }
+#title .buttons { display: flex; gap: 14px; }
+#title button {
+  font: bold 20px "Courier New", monospace; padding: 10px 26px; background: #ffd34d; color: #1a1a1a;
+  border: 3px solid #000; cursor: pointer; box-shadow: 4px 4px 0 #000;
+}
+#title button:hover { background: #fff; }
+#title #btn-new { background: #9fd0ff; }
+#title .controls { margin-top: 28px; font-size: 14px; line-height: 1.6; color: #e6e6e6; text-align: center; }
+#title .controls b { color: #ffd34d; }
+#pause { display: none; font-size: 42px; font-weight: bold; cursor: pointer; }
+#pause small { font-size: 16px; color: #cfd8e6; }
+
+@media (max-width: 640px) {
+  #title h1 { font-size: 38px; }
+  #hud { width: 180px; }
+  #minimap { width: 130px; height: 130px; }
+}
