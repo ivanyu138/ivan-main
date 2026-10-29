@@ -44,7 +44,45 @@ export class Sfx {
     s.start();
   }
 
-  play(name) {
+  // A cat meow: a sawtooth that rises then falls, through a moving 'vowel' filter.
+  meow(f, delay = 0) {
+    const c = this.ctx, t = c.currentTime + delay;
+    const o = c.createOscillator(), bp = c.createBiquadFilter(), g = c.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f * 0.9, t);
+    o.frequency.linearRampToValueAtTime(f * 1.35, t + 0.13);
+    o.frequency.linearRampToValueAtTime(f * 0.72, t + 0.5);
+    bp.type = 'bandpass';
+    bp.Q.value = 3;
+    bp.frequency.setValueAtTime(900, t);
+    bp.frequency.linearRampToValueAtTime(2000, t + 0.15);
+    bp.frequency.linearRampToValueAtTime(700, t + 0.5);
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.5, t + 0.05);
+    g.gain.linearRampToValueAtTime(0.35, t + 0.32);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    o.connect(bp).connect(g).connect(this.master);
+    o.start(t);
+    o.stop(t + 0.6);
+  }
+
+  hiss(dur = 0.8, delay = 0) {
+    const c = this.ctx, t = c.currentTime + delay, n = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = c.createBufferSource(), hp = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = buf;
+    hp.type = 'highpass';
+    hp.frequency.value = 2600;
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.45, t + 0.06);
+    g.gain.linearRampToValueAtTime(0.3, t + dur * 0.7);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    s.connect(hp).connect(g).connect(this.master);
+    s.start(t);
+  }
+
+  play(name, arg) {
     if (!this.ctx || this.muted) return;
     switch (name) {
       case 'swing': this.noise(0.08, 0.12, 2500); break;
@@ -57,7 +95,10 @@ export class Sfx {
       case 'horn': this.tone(370, 0.35, 'square', 0.12); this.tone(466, 0.35, 'square', 0.1); break;
       case 'crash': this.noise(0.35, 0.6, 500); break;
       case 'door': this.tone(220, 0.08, 'square', 0.15); this.tone(160, 0.1, 'square', 0.15, 0, 0.08); break;
-      case 'meow': this.tone(700, 0.35, 'sine', 0.2, 300); break;
+      case 'meow': this.meow(arg || 650); break;
+      case 'meowback': this.meow(arg || 950, 0.6); break;
+      case 'hiss': this.hiss(0.8); break;
+      case 'scratch': for (let i = 0; i < 3; i++) this.hiss(0.05, i * 0.045); break;
       case 'buy': this.tone(1200, 0.05, 'square', 0.12); this.tone(1600, 0.1, 'square', 0.12, 0, 0.05); break;
       case 'deny': this.tone(140, 0.18, 'square', 0.15); break;
     }

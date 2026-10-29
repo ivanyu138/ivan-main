@@ -152,6 +152,19 @@ export class NPCs {
     e.fg.position.x = -0.4 * (1 - e.hp / e.maxHp);
   }
 
+  // A hiss knocks nearby vandals back and freezes them for a moment.
+  hissAt(pos, r) {
+    for (const e of this.enemies) {
+      if (e.state === 'down') continue;
+      const dx = e.pos.x - pos.x, dz = e.pos.z - pos.z, d = Math.hypot(dx, dz) || 1;
+      if (d > r) continue;
+      e.vx = (dx / d) * 7;
+      e.vz = (dz / d) * 7;
+      e.stunT = 1.8;
+      e.state = 'chase';
+    }
+  }
+
   hitInFront(pos, fx, fz, dmg) {
     for (const e of this.enemies) {
       if (e.state === 'down') continue;
@@ -217,7 +230,8 @@ export class NPCs {
       let speed = 0;
       e.cd -= dt;
       if (e.punchT > 0) e.punchT = Math.max(0, e.punchT - dt * 3);
-      if (e.state === 'chase' && !g.dead) {
+      e.stunT = Math.max(0, (e.stunT || 0) - dt);
+      if (e.state === 'chase' && !g.dead && e.stunT <= 0) {
         const tx = pl.vehicle ? e.hx : pl.pos.x, tz = pl.vehicle ? e.hz : pl.pos.z;
         const ex = tx - e.pos.x, ez = tz - e.pos.z, ed = Math.hypot(ex, ez);
         e.facing += angDiff(e.facing, Math.atan2(ex, ez)) * Math.min(1, dt * 8);

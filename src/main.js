@@ -231,7 +231,27 @@ class Game {
     if (item.quest === 'cat') {
       this.quests.state.cat.data.item = null;
       this.ui.toast('You picked up Whiskers. She purrs.', '#ffd34d');
-      this.sfx.play('meow');
+      this.sfx.play('meow', 950);
+    }
+  }
+
+  onMeow() {
+    const p = this.player.pos;
+    // Whiskers answers if she's within earshot, which pins down where she's hiding.
+    const cat = this.quests.state.cat.data.item;
+    if (cat && Math.hypot(cat.pos.x - p.x, cat.pos.z - p.z) < 45) {
+      this.sfx.play('meowback', 950);
+      this.quests.state.cat.data.hint = { x: cat.pos.x, z: cat.pos.z, r: 6 };
+      this.ui.toast('Something meows back!', '#ffd34d');
+    }
+    if (this.player.vehicle) return;
+    const fans = this.peds.charm(p.x, p.z, 9);
+    if (fans.length && this.time - (this.lastTip || -99) > 25 && Math.random() < 0.4) {
+      this.lastTip = this.time;
+      const f = fans[0];
+      this.ui.toast('"Aww, what a cute kitty!"', '#ffb0c8');
+      this.pickups.addCash((f.pos.x + p.x) / 2, (f.pos.z + p.z) / 2, 2 + Math.floor(Math.random() * 6));
+      this.rpg.rep += 1;
     }
   }
 

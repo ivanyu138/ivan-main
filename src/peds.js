@@ -90,6 +90,21 @@ export class Pedestrians {
     p.fz = dz / d;
   }
 
+  // Meowing makes nearby walkers stop and look. Returns the people charmed.
+  charm(x, z, radius) {
+    const out = [];
+    for (const p of this.list) {
+      if ((p.state !== 'walk' && p.state !== 'idle' && p.state !== 'look') || !p.h.group.visible) continue;
+      if (Math.hypot(p.pos.x - x, p.pos.z - z) > radius) continue;
+      p.state = 'look';
+      p.timer = 2.5;
+      p.lookX = x;
+      p.lookZ = z;
+      out.push(p);
+    }
+    return out;
+  }
+
   scare(x, z, radius) {
     for (const p of this.list) if (Math.hypot(p.pos.x - x, p.pos.z - z) < radius) this.flee(p, x, z, 4);
   }
@@ -187,6 +202,13 @@ export class Pedestrians {
         }
         speed = Math.hypot(vx, vz);
         if (speed > 0.1) p.facing += angDiff(p.facing, Math.atan2(vx, vz)) * Math.min(1, dt * 10);
+      } else if (p.state === 'look') {
+        p.timer -= dt;
+        p.facing += angDiff(p.facing, Math.atan2(p.lookX - p.pos.x, p.lookZ - p.pos.z)) * Math.min(1, dt * 6);
+        if (p.timer < 0) {
+          p.state = 'walk';
+          p.timer = this.rng.range(6, 15);
+        }
       } else if (p.state === 'down') {
         p.timer -= dt;
         p.pos.x += p.vx * dt;

@@ -1,5 +1,49 @@
 import * as THREE from 'three';
-import { makeCat, animateCat } from './cat.js';
+import { makeCat, animateCat, CATS } from './cat.js';
+
+function canvasTex(w, h, draw) {
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  draw(c.getContext('2d'));
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function bubbleTex(text, color) {
+  return canvasTex(128, 48, (x) => {
+    x.fillStyle = '#ffffff';
+    x.strokeStyle = '#000000';
+    x.lineWidth = 4;
+    x.beginPath();
+    x.roundRect(4, 4, 120, 30, 8);
+    x.moveTo(54, 34);
+    x.lineTo(64, 45);
+    x.lineTo(72, 34);
+    x.fill();
+    x.stroke();
+    x.fillStyle = '#ffffff';
+    x.fillRect(56, 30, 14, 5);
+    x.fillStyle = color;
+    x.font = 'bold 26px "Courier New", monospace';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.fillText(text, 64, 20);
+  });
+}
+
+const clawTex = canvasTex(32, 32, (x) => {
+  x.strokeStyle = '#ffffff';
+  x.lineWidth = 3;
+  for (let i = 0; i < 3; i++) {
+    x.beginPath();
+    x.moveTo(6 + i * 8, 4);
+    x.lineTo(2 + i * 8 + 6, 28);
+    x.stroke();
+  }
+});
 import { groundHeight, HALF } from './world.js';
 import { angDiff, clamp } from './util.js';
 
@@ -23,6 +67,51 @@ export class Player {
     this.moving = false;
     this.idleT = 0;
     this.sit = 0;
+    this.meowT = 0;
+    this.meowCd = 0;
+    this.hissT = 0;
+    this.hissCd = 0;
+    this.bubbles = {
+      meow: new THREE.SpriteMaterial({ map: bubbleTex('Meow!', '#1a1a1a'), depthTest: false }),
+      hiss: new THREE.SpriteMaterial({ map: bubbleTex('HSSS!', '#b00000'), depthTest: false }),
+    };
+    this.bubble = new THREE.Sprite(this.bubbles.meow);
+    this.bubble.scale.set(1.3, 0.49, 1);
+    this.bubble.position.y = 1.25;
+    this.bubble.renderOrder = 12;
+    this.bubble.visible = false;
+    this.bubbleT = 0;
+    this.root.add(this.bubble);
+    this.claw = new THREE.Sprite(new THREE.SpriteMaterial({ map: clawTex, transparent: true, depthTest: false }));
+    this.claw.scale.set(0.5, 0.5, 1);
+    this.claw.renderOrder = 12;
+    this.claw.visible = false;
+    game.scene.add(this.claw);
+  }
+
+  say(kind) {
+    this.bubble.material = this.bubbles[kind];
+    this.bubble.visible = true;
+    this.bubbleT = 1.3;
+  }
+
+  meow() {
+    const g = this.game;
+    this.meowCd = 0.9;
+    this.meowT = 1;
+    g.sfx.play('meow', CATS[this.catId].meow);
+    if (!this.vehicle) this.say('meow');
+    g.onMeow();
+  }
+
+  hiss() {
+    const g = this.game;
+    this.hissCd = 2.5;
+    this.hissT = 1;
+    g.sfx.play('hiss');
+    this.say('hiss');
+    g.peds.scare(this.pos.x, this.pos.z, 11);
+    g.npcs.hissAt(this.pos, 4.5);
   }
 
   setCat(id) {
@@ -38,6 +127,16 @@ export class Player {
 
   update(dt) {
     const g = this.game, inp = g.input, rpg = g.rpg;
+    this.meowCd -= dt;
+    this.hissCd -= dt;
+    this.meowT = Math.max(0, this.meowT - dt * 2);
+    this.bubbleT -= dt;
+    if (this.bubbleT < 0) this.bubble.visible = false;
+    if (this.claw.visible) {
+      this.claw.material.opacity -= dt * 4;
+      if (this.claw.material.opacity <= 0) this.claw.visible = false;
+    }
+    if (this.canAct() && inp.pressed('KeyQ') && this.meowCd <= 0) this.meow();
     if (this.vehicle) {
       this.root.visible = false;
       this.pos.copy(this.vehicle.pos);
@@ -89,13 +188,20 @@ export class Player {
     this.pos.x = clamp(this.pos.x, -lim, lim);
     this.pos.z = clamp(this.pos.z, -lim, lim);
 
-    // Punch
+    if (this.canAct() && inp.pressed('KeyR') && this.hissCd <= 0) this.hiss();
+    this.hissT = Math.max(0, this.hissT - dt * 1.1);
+
+    // Scratch
     this.punchCd -= dt;
     if (this.punchT > 0) this.punchT = Math.max(0, this.punchT - dt * 3.2);
     if (this.canAct() && (inp.pressed('Mouse0') || inp.pressed('KeyJ')) && this.punchCd <= 0) {
       this.punchCd = 0.42;
       this.punchT = 1;
-      g.sfx.play('swing');
+      g.sfx.play('scratch');
+      this.claw.position.set(this.pos.x + Math.sin(this.facing) * 0.7, this.pos.y + 0.45, this.pos.z + Math.cos(this.facing) * 0.7);
+      this.claw.material.opacity = 1;
+      this.claw.material.rotation = Math.random() * 0.6 - 0.3;
+      this.claw.visible = true;
       const fx = Math.sin(this.facing), fz = Math.cos(this.facing);
       const dmg = 7 + rpg.skills.strength * 3;
       const hit = g.npcs.hitInFront(this.pos, fx, fz, dmg) || g.peds.hitInFront(this.pos, fx, fz, dmg);
@@ -107,8 +213,8 @@ export class Player {
     this.stride += (targetStride - this.stride) * Math.min(1, dt * 10);
     this.phase += dt * (speed > 6 ? 16 : 11) * (speed > 0 ? 1 : 0);
     // Cats sit down when left alone for a few seconds.
-    this.idleT = speed > 0 || !this.onGround || this.punchT > 0 ? 0 : this.idleT + dt;
+    this.idleT = speed > 0 || !this.onGround || this.punchT > 0 || this.hissT > 0 ? 0 : this.idleT + dt;
     this.sit += ((this.idleT > 3 ? 1 : 0) - this.sit) * Math.min(1, dt * 5);
-    animateCat(this.cat, dt, this.phase, this.stride, this.punchT, this.sit);
+    animateCat(this.cat, dt, this.phase, this.stride, this.punchT, this.sit, Math.min(1, this.hissT * 3), this.meowT);
   }
 }

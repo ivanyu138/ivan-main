@@ -24,7 +24,9 @@ npm run build      # static build in dist/
 | Mouse (or arrow keys) | orbit camera | orbit camera (auto-recenters) |
 | Shift | sprint | |
 | Space | jump | handbrake |
-| Click / J | paw swipe | |
+| Click / J | scratch | |
+| Q | meow | meow |
+| R | hiss | |
 | E | talk / interact / enter shop | exit |
 | F | enter or carjack a car | exit |
 | H | | horn |
@@ -36,7 +38,7 @@ npm run build      # static build in dist/
 ## What's in it
 
 - **World**: a 19×19 grid of blocks with sidewalks, lane markings, street lamps, about 4,000 houses, downtown towers, shops with awnings, parks with ponds, and warehouses. There's a day/night cycle (16 real minutes per day), and windows light up at night.
-- **Cats**: pick your cat on the select screen when you start a new game, or switch later with **CHANGE CAT** on the title screen. Cats sprint fast, jump high, swipe with a paw, and sit down when left idle. Yes, they can still drive.
+- **Cats**: pick your cat on the select screen when you start a new game, or switch later with **CHANGE CAT** on the title screen. Cats sprint fast, jump high and sit down when left idle. Each has its own meow. **Scratch** is your attack. **Meow** makes passers-by stop and look, and sometimes earns you a tip; Whiskers answers if she's in earshot. **Hiss** puffs you up, sends pedestrians running, and knocks back and freezes nearby vandals. Yes, they can still drive.
 - **Traffic**: about 45 AI cars drive in the right-hand lane, turn at intersections, and brake for you and for each other. You can steal any of them.
 - **Pedestrians**: they walk the sidewalks, flee when you punch them or honk, and get knocked over if you drive into them (which costs reputation).
 - **RPG systems**: XP and levels, HP and stamina, money, reputation, and four skills (Strength, Stamina, Driving, Charisma). You get skill points on level-up, and the gym also trains skills.

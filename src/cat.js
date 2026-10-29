@@ -8,19 +8,19 @@ export const CATS = {
     name: 'Toro',
     desc: 'Big, fluffy and orange. Green eyes.',
     body: '#e3a052', stripe: '#c9813a', light: '#f2c890', muzzle: '#f4d6a6', paws: '#f0c48a',
-    eye: '#86b04a', chubby: 1.12, stripes: 'faint',
+    eye: '#86b04a', chubby: 1.12, stripes: 'faint', meow: 520,
   },
   tabby: {
     name: 'Uni',
     desc: 'Brown tabby with a white bib and socks. Green eyes.',
     body: '#8c6a46', stripe: '#2f251a', light: '#f3eee6', muzzle: '#f3eee6', paws: '#f3eee6',
-    eye: '#a8b84a', chubby: 1, stripes: 'bold',
+    eye: '#a8b84a', chubby: 1, stripes: 'bold', meow: 660,
   },
   calico: {
     name: 'Phantom',
     desc: 'Tortoiseshell tabby with orange patches and a white bib. Amber eyes.',
     body: '#7a5a3a', stripe: '#2a2016', light: '#f3eee6', muzzle: '#e9c9a0', paws: '#f3eee6',
-    eye: '#d9b22e', chubby: 1.04, stripes: 'bold', patches: '#cf7f36',
+    eye: '#d9b22e', chubby: 1.04, stripes: 'bold', patches: '#cf7f36', meow: 800,
   },
 };
 export const CAT_ORDER = ['ginger', 'tabby', 'calico'];
@@ -97,9 +97,11 @@ export function makeCat(id) {
   return { group, rig, body, tail, legs, t: 0 };
 }
 
-// phase: gait cycle, amt: 0..1 stride, swipe: 0..1 paw swipe, sit: 0..1 sitting blend.
-export function animateCat(cat, dt, phase, amt, swipe = 0, sit = 0) {
+// phase: gait cycle, amt: 0..1 stride, swipe: 0..1 paw swipe, sit: 0..1 sitting blend,
+// hiss: 0..1 puffed-up hiss pose, meow: 0..1 meow progress.
+export function animateCat(cat, dt, phase, amt, swipe = 0, sit = 0, hiss = 0, meow = 0) {
   cat.t += dt;
+  sit *= 1 - hiss;
   const [fl, fr, bl, br] = cat.legs;
   const s = Math.sin(phase) * 0.7 * amt;
   fl.rotation.x = s * (1 - sit) + 0.5 * sit;
@@ -112,4 +114,14 @@ export function animateCat(cat, dt, phase, amt, swipe = 0, sit = 0) {
   if (swipe > 0) fr.rotation.x = -1.5 * Math.sin(swipe * Math.PI);
   cat.tail.rotation.x = 0.9 - 0.45 * Math.min(1, amt) - 0.7 * sit;
   cat.tail.rotation.y = Math.sin(cat.t * (amt > 0.1 ? 6 : 1.6)) * (amt > 0.1 ? 0.2 : 0.35);
+  if (meow > 0) cat.rig.rotation.x -= 0.18 * Math.sin(meow * Math.PI);
+  if (hiss > 0) {
+    // Puff up, stand tall on stiff legs, tail straight up and bristling.
+    const puff = 1 + 0.14 * hiss;
+    cat.rig.scale.set(puff, 1 + 0.18 * hiss, puff);
+    cat.rig.position.y += 0.05 * hiss;
+    for (const l of cat.legs) l.rotation.x *= 1 - hiss;
+    cat.tail.rotation.x = cat.tail.rotation.x * (1 - hiss) + 1.5 * hiss;
+    cat.tail.rotation.y = Math.sin(cat.t * 45) * 0.07 * hiss;
+  } else cat.rig.scale.set(1, 1, 1);
 }

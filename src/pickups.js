@@ -143,7 +143,7 @@ export class Pickups {
         if (d < 25 && !it.heard) {
           it.heard = true;
           g.ui.toast('*meow* ...you hear a cat nearby', '#ffd34d');
-          g.sfx.play('meow');
+          g.sfx.play('meow', 950);
         }
       }
     }
