@@ -2,6 +2,7 @@ import { MAP_EXT, MAP_PX, HALF } from './world.js';
 import { ITEMS, SHOPS, SKILLS, SKILL_MAX } from './rpg.js';
 import { QUESTS } from './quests.js';
 import { NPC_DEFS } from './npcs.js';
+import { CATS } from './cat.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
@@ -286,7 +287,7 @@ export class UI {
       h += `<h3>Collection</h3><div>Golden gnomes: ${r.gnomes.length}/10</div>`;
       h += `<div class="foot">Number to use &middot; I / Esc to close</div>`;
     } else if (P.type === 'char') {
-      h = `<h2>Character</h2>
+      h = `<h2>${CATS[r.cat] ? CATS[r.cat].name : 'Character'}</h2>
         <div class="item"><span>Level</span><span>${r.level}</span></div>
         <div class="item"><span>XP</span><span>${r.xp} / ${r.xpNext}</span></div>
         <div class="item"><span>Health</span><span>${Math.ceil(r.hp)} / ${r.maxHp}</span></div>

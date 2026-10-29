@@ -1,6 +1,6 @@
 # Maple Heights
 
-A small open-world RPG in the browser. You play as one of three cats (Ginger, Tabby or Calico) in third person with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The world is a procedurally generated neighborhood of about 2 square miles (2.28 km × 2.28 km). It has a downtown core, a commercial ring, suburbs, parks and an industrial corner.
+A small open-world RPG in the browser. You play as one of three cats: Toro (ginger), Uni (brown tabby) or Phantom (calico tabby), in third person with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The world is a procedurally generated neighborhood of about 2 square miles (2.28 km × 2.28 km). It has a downtown core, a commercial ring, suburbs, parks and an industrial corner.
 
 Built with [three.js](https://threejs.org) and [Vite](https://vitejs.dev). There are no asset files: the geometry, textures and sounds are all generated in code.
 

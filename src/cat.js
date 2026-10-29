@@ -5,19 +5,19 @@ import { charMat } from './characters.js';
 // The three playable cats. Colors follow the reference photo.
 export const CATS = {
   ginger: {
-    name: 'Ginger',
+    name: 'Toro',
     desc: 'Big, fluffy and orange. Green eyes.',
     body: '#e3a052', stripe: '#c9813a', light: '#f2c890', muzzle: '#f4d6a6', paws: '#f0c48a',
     eye: '#86b04a', chubby: 1.12, stripes: 'faint',
   },
   tabby: {
-    name: 'Tabby',
+    name: 'Uni',
     desc: 'Brown tabby with a white bib and socks. Green eyes.',
     body: '#8c6a46', stripe: '#2f251a', light: '#f3eee6', muzzle: '#f3eee6', paws: '#f3eee6',
     eye: '#a8b84a', chubby: 1, stripes: 'bold',
   },
   calico: {
-    name: 'Calico',
+    name: 'Phantom',
     desc: 'Tortoiseshell tabby with orange patches and a white bib. Amber eyes.',
     body: '#7a5a3a', stripe: '#2a2016', light: '#f3eee6', muzzle: '#e9c9a0', paws: '#f3eee6',
     eye: '#d9b22e', chubby: 1.04, stripes: 'bold', patches: '#cf7f36',
