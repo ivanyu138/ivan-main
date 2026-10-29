@@ -4,7 +4,11 @@ A small open-world RPG in the browser. You play in third person with a GTA-style
 
 Built with [three.js](https://threejs.org) and [Vite](https://vitejs.dev). There are no asset files: the geometry, textures and sounds are all generated in code.
 
-## Run it
+## Play it
+
+Play in your browser at **https://ivanyu138.github.io/ivan-main/** (needs a keyboard). Every push to `master` rebuilds and republishes it.
+
+## Run it locally
 
 ```bash
 npm install
