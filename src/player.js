@@ -74,6 +74,7 @@ export class Player {
     this.bubbles = {
       meow: new THREE.SpriteMaterial({ map: bubbleTex('Meow!', '#1a1a1a'), depthTest: false }),
       hiss: new THREE.SpriteMaterial({ map: bubbleTex('HSSS!', '#b00000'), depthTest: false }),
+      mmrf: new THREE.SpriteMaterial({ map: bubbleTex('Mmrf!', '#6a4a2a'), depthTest: false }),
     };
     this.bubble = new THREE.Sprite(this.bubbles.meow);
     this.bubble.scale.set(1.3, 0.49, 1);
@@ -140,13 +141,13 @@ export class Player {
     this.game.sfx.play('drop');
   }
 
+  // With something in its mouth the cat keeps hold of it and gives a muffled "mmrf" instead.
   meow() {
-    const g = this.game;
-    this.drop();
+    const g = this.game, full = !!this.carry;
     this.meowCd = 0.9;
-    this.meowT = 1;
-    g.sfx.play('meow', CATS[this.catId].meow);
-    if (!this.vehicle) this.say('meow');
+    this.meowT = full ? 0.5 : 1;
+    g.sfx.play(full ? 'mmrf' : 'meow', CATS[this.catId].meow);
+    if (!this.vehicle) this.say(full ? 'mmrf' : 'meow');
     g.onMeow();
   }
 

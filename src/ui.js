@@ -3,6 +3,7 @@ import { ITEMS, SHOPS, SKILLS, SKILL_MAX } from './rpg.js';
 import { QUESTS } from './quests.js';
 import { NPC_DEFS } from './npcs.js';
 import { CATS } from './cat.js';
+import { UPGRADES } from './basecamp.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
@@ -326,6 +327,14 @@ export class UI {
         h += `<div class="item"><span><span class="k">[${i + 1}]</span> ${label}${own}</span><span>$${g.shopPrice(s)}</span></div>`;
       });
       h += `<div class="foot">Press a number to buy &middot; T / Esc to leave</div>`;
+    } else if (P.type === 'camp') {
+      const camp = g.baseCamp;
+      h = `<h2>Base Camp Upgrades</h2><div class="dim">You have $${r.money}. Find cash on the street, earn tips by meowing, or get paid by people around town.</div><h3>Upgrades</h3>`;
+      UPGRADES.forEach((u, i) => {
+        const own = camp.has(u.id);
+        h += `<div class="item"><span><span class="k">[${i + 1}]</span> ${esc(u.name)} <span class="dim">${esc(u.desc)}</span></span><span>${own ? '<span class="k">&#10003; owned</span>' : '$' + u.price}</span></div>`;
+      });
+      h += `<div class="foot">Press a number to buy &middot; T / Esc to close</div>`;
     } else if (P.type === 'inv') {
       h = '<h2>Inventory</h2>';
       const ids = ITEM_ORDER.filter((id) => r.inventory[id]);
@@ -456,10 +465,11 @@ export class UI {
 
   panelInput(inp) {
     const g = this.game, P = this.panel, n = inp.digit();
-    const closeKey = { shop: 'KeyT', inv: 'KeyI', char: 'KeyC', log: 'Tab', map: 'KeyM' }[P.type];
+    const closeKey = { shop: 'KeyT', camp: 'KeyT', inv: 'KeyI', char: 'KeyC', log: 'Tab', map: 'KeyM' }[P.type];
     if (inp.pressed(closeKey) || inp.pressed('Escape') || inp.pressed('Backspace')) return this.closePanel();
     if (!n) return;
     if (P.type === 'shop') g.buy(P.arg, n - 1);
+    else if (P.type === 'camp') g.baseCamp.buy(n - 1);
     else if (P.type === 'inv') {
       const ids = ITEM_ORDER.filter((id) => g.rpg.inventory[id]);
       if (ids[n - 1]) g.rpg.useItem(ids[n - 1]);

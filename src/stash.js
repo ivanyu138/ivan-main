@@ -24,11 +24,13 @@ function denGeo() {
 export class Stash {
   constructor(game) {
     this.game = game;
-    const p = game.world.plaza;
-    this.pos = new THREE.Vector3(p.x - 26, CURB, p.z - 30);
+    // Tucked at the back of the alley, with the box opening toward the street.
+    const c = game.world.alley.camp;
+    this.pos = new THREE.Vector3(c.x, CURB, c.z);
+    this.rot = Math.PI;
     const den = new THREE.Mesh(denGeo(), mat);
     den.position.copy(this.pos);
-    den.rotation.y = Math.PI * 0.15;
+    den.rotation.y = this.rot;
     den.castShadow = den.receiveShadow = true;
     game.scene.add(den);
     this.kinds = [];
@@ -39,10 +41,10 @@ export class Stash {
     return Math.hypot(pos.x - this.pos.x, pos.z - this.pos.z) < r;
   }
 
-  // Treasure piles up in a loose spiral in front of the box.
+  // Treasure piles up in a loose spiral in front of the box, kept within the alley walls.
   place(mesh, i) {
-    const a = i * 2.4, r = 0.75 + 0.11 * Math.sqrt(i * 3);
-    mesh.position.set(this.pos.x + Math.cos(a) * r, this.pos.y + Math.floor(i / 25) * 0.04, this.pos.z + 0.6 + Math.sin(a) * r * 0.8);
+    const a = i * 2.4, r = 0.55 + 0.1 * Math.sqrt(i * 3);
+    mesh.position.set(this.pos.x + Math.cos(a) * Math.min(r, 2.2), this.pos.y + Math.floor(i / 25) * 0.04, this.pos.z - 1.4 + Math.sin(a) * r * 0.5);
     mesh.rotation.set(0, a * 1.7, 0);
     this.game.scene.add(mesh);
     this.meshes.push(mesh);
@@ -56,7 +58,8 @@ export class Stash {
     g.sfx.play('drop');
     g.ui.toast(`Stashed the ${item.name} at base camp (${n + 1} treasures)`, '#e8c890');
     if ((n + 1) % 5 === 0) {
-      const xp = 20 + (n + 1) * 2;
+      // Treasure shelves at base camp make showing off the stash worth more.
+      const xp = Math.round((20 + (n + 1) * 2) * (g.baseCamp.has('shelves') ? 1.5 : 1));
       g.rpg.addXP(xp);
       g.ui.toast((n + 1) % 25 === 0 ? 'What a hoard! Every cat in Brooklyn is jealous.' : 'Your stash is growing!', '#ffd34d');
       g.sfx.play('levelup');

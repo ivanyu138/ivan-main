@@ -63,6 +63,7 @@ export class RPG {
     this.fishGiven = 0;
     this.socksSold = 0;
     this.stash = [];
+    this.camp = [];
     this.boostT = 0;
   }
 
@@ -141,7 +142,8 @@ export class RPG {
   serialize() {
     const { level, xp, money, maxHp, hp, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold } = this;
     const stash = this.game.stash ? this.game.stash.kinds : this.stash;
-    return { level, xp, money, maxHp, hp, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold, stash };
+    const camp = this.game.baseCamp ? this.game.baseCamp.ids() : this.camp;
+    return { level, xp, money, maxHp, hp, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold, stash, camp };
   }
 
   load(d) {

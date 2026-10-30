@@ -66,6 +66,27 @@ export class Sfx {
     o.stop(t + 0.6);
   }
 
+  // A meow through a mouthful: lower, shorter and muffled.
+  mmrf(f) {
+    const c = this.ctx, t = c.currentTime;
+    const o = c.createOscillator(), lp = c.createBiquadFilter(), g = c.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f * 0.7, t);
+    o.frequency.linearRampToValueAtTime(f * 0.85, t + 0.1);
+    o.frequency.linearRampToValueAtTime(f * 0.6, t + 0.3);
+    lp.type = 'lowpass';
+    lp.Q.value = 6;
+    lp.frequency.setValueAtTime(500, t);
+    lp.frequency.linearRampToValueAtTime(750, t + 0.1);
+    lp.frequency.linearRampToValueAtTime(380, t + 0.3);
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.6, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
+    o.connect(lp).connect(g).connect(this.master);
+    o.start(t);
+    o.stop(t + 0.4);
+  }
+
   hiss(dur = 0.8, delay = 0) {
     const c = this.ctx, t = c.currentTime + delay, n = Math.floor(c.sampleRate * dur);
     const buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
@@ -96,6 +117,7 @@ export class Sfx {
       case 'crash': this.noise(0.35, 0.6, 500); break;
       case 'door': this.tone(220, 0.08, 'square', 0.15); this.tone(160, 0.1, 'square', 0.15, 0, 0.08); break;
       case 'meow': this.meow(arg || 650); break;
+      case 'mmrf': this.mmrf(arg || 650); break;
       case 'meowback': this.meow(arg || 950, 0.6); break;
       case 'hiss': this.hiss(0.8); break;
       case 'scratch': for (let i = 0; i < 3; i++) this.hiss(0.05, i * 0.045); break;

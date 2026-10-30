@@ -181,6 +181,7 @@ class Game {
     if (this.player.vehicle) this.exitCar();
     this.pickups.initGnomes([]);
     this.stash.load([]);
+    this.baseCamp.load([]);
     this.sky.time = 9;
     this.toSpawn();
   }
@@ -215,6 +216,7 @@ class Game {
     }
     this.pickups.initGnomes(this.rpg.gnomes);
     this.stash.load(this.rpg.stash);
+    this.baseCamp.load(this.rpg.camp);
     this.player.setCat(this.rpg.cat || 'ginger');
     return true;
   }
@@ -536,6 +538,9 @@ class Game {
       } else if (buddy) {
         text = `[T] Hang out with ${buddy.name}`;
         action = () => this.baseCamp.talk(buddy);
+      } else if (this.stash.near(p.pos, 2.2)) {
+        text = '[T] Upgrade base camp';
+        action = () => ui.openPanel('camp');
       }
     }
     text = this.carryPrompt(text, this.stash);

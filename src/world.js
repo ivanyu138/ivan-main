@@ -34,6 +34,8 @@ export const PARK_RECT = {
 };
 const inPark = (x, z) => x > PARK_RECT.x0 && x < PARK_RECT.x1 && z > PARK_RECT.z0 && z < PARK_RECT.z1;
 const PLAYGROUNDS = new Set(['2,2']);
+// Base camp's alley: a dead-end gap between rowhouses, entered from the street.
+const ALLEY = { bi: 1, bj: 1, offset: 42, width: 6, depth: 19 };
 
 export function blockRect(bi, bj) {
   return { x0: roadX(bi) + ROAD / 2, x1: roadX(bi + 1) - ROAD / 2, z0: roadZ(bj) + ROAD / 2, z1: roadZ(bj + 1) - ROAD / 2 };
@@ -258,7 +260,13 @@ export class World {
       else this.apartmentEnd(L, end, rng);
     }
     const ax0 = L.x0 + 17, ax1 = L.x1 - 17;
-    this.rowhouseRow(ax0, ax1, L, 'n', rng);
+    if (bi === ALLEY.bi && bj === ALLEY.bj) {
+      // The block just south of the plaza has an alley cut into its north row.
+      const a0 = L.x0 + ALLEY.offset, a1 = a0 + ALLEY.width;
+      this.rowhouseRow(ax0, a0, L, 'n', rng);
+      this.rowhouseRow(a1, ax1, L, 'n', rng);
+      this.genAlley(L, a0, a1);
+    } else this.rowhouseRow(ax0, ax1, L, 'n', rng);
     this.rowhouseRow(ax0, ax1, L, 's', rng);
     // Backyards run down the middle of the block.
     const bz0 = L.z0 + 19, bz1 = L.z1 - 19, mz = (bz0 + bz1) / 2;
@@ -306,6 +314,40 @@ export class World {
     this.colliders.addBox(x0, z0, x1, z1, CURB + h);
     this.rect(x0, z0, x1, z1, shade(style.color, 0.8));
     this.houseDoors.push({ x: dx, z: front === 'n' ? L.z0 - 1 : L.z1 + 1 });
+  }
+
+  // A narrow brick alley between rowhouses with a dead end, a dumpster and trash.
+  genAlley(L, x0, x1) {
+    const z0 = L.z0, z1 = L.z0 + ALLEY.depth, cx = (x0 + x1) / 2, b = this.chunkB(cx, (z0 + z1) / 2), m = this.markB;
+    const brick = '#7a3a2e', dark = '#4e2a22';
+    m.quadH(x0, z0, x1, z1, CURB + 0.01, '#5c5a56');
+    for (const [px, pz, r] of [[cx - 1, z0 + 9, 0.9], [cx + 1.2, z0 + 13, 0.7]]) m.prism(px, CURB + 0.015, pz, r, 0.005, 12, '#3e4448');
+    this.rect(x0, z0, x1, z1, '#5c5a56');
+    // Side walls where the rowhouses end, and the dead end.
+    for (const [wx0, wx1] of [[x0 - 0.3, x0], [x1, x1 + 0.3]]) {
+      b.box((wx0 + wx1) / 2, CURB, z0 + 3.5 + (ALLEY.depth - 3.5) / 2, wx1 - wx0, 3.4, ALLEY.depth - 3.5, brick);
+      this.colliders.addBox(wx0, z0 + 3.5, wx1, z1, CURB + 3.4);
+    }
+    b.box(cx, CURB, z1 + 0.15, x1 - x0 + 0.6, 3.4, 0.3, brick);
+    b.box(cx, CURB + 3.4, z1 + 0.15, x1 - x0 + 0.7, 0.15, 0.4, dark);
+    this.colliders.addBox(x0, z1, x1, z1 + 0.3, CURB + 3.4);
+    // Dumpster, trash cans and crates near the mouth of the alley.
+    b.box(x0 + 0.9, CURB + 0.15, z0 + 6.5, 1.5, 1.25, 2.6, '#2f5a3a');
+    b.box(x0 + 0.9, CURB + 1.4, z0 + 6.5, 1.6, 0.08, 2.7, '#24482e');
+    this.colliders.addBox(x0, z0 + 5.2, x0 + 1.65, z0 + 7.8, CURB + 1.5);
+    for (const [tx, tz] of [[x1 - 0.5, z0 + 5], [x1 - 0.55, z0 + 6.1]]) {
+      b.prism(tx, CURB, tz, 0.32, 0.9, 10, '#7a7e84', '#5a5e64');
+      this.colliders.addCircle(tx, tz, 0.32, CURB + 1);
+    }
+    b.box(x1 - 0.5, CURB, z0 + 8.6, 0.8, 0.6, 0.8, '#9a7a4a');
+    b.box(x1 - 0.5, CURB + 0.6, z0 + 8.6, 0.6, 0.5, 0.6, '#8a6a3a');
+    this.colliders.addBox(x1 - 0.9, z0 + 8.2, x1, z0 + 9, CURB + 1.1);
+    // A rusty fire escape on one wall.
+    for (let y = CURB + 3.6; y < CURB + 10; y += 3.2) {
+      b.box(x0 + 0.5, y, z0 + 11, 1.0, 0.1, 3, '#2a2a2a');
+      b.box(x0 + 1.0, y, z0 + 11, 0.05, 0.9, 3, '#2a2a2a');
+    }
+    this.alley = { x: cx, z0, z1, camp: { x: cx, z: z1 - 4 } };
   }
 
   // Five- and six-story brick apartment buildings with fire escapes, facing an avenue.
