@@ -9,7 +9,11 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 const ITEM_ORDER = Object.keys(ITEMS);
 
-function houseIcon(x, cx, cy) {
+function houseIcon(x, cx, cy, s = 1) {
+  x.save();
+  x.translate(cx, cy);
+  x.scale(s, s);
+  cx = cy = 0;
   x.fillStyle = '#000';
   x.beginPath();
   x.moveTo(cx - 7, cy);
@@ -32,6 +36,10 @@ function houseIcon(x, cx, cy) {
   x.lineTo(cx - 3.5, cy - 0.5);
   x.closePath();
   x.fill();
+  // A door, so it reads as a house even when small.
+  x.fillStyle = '#7a4a2a';
+  x.fillRect(-1.2, 1.5, 2.4, 3);
+  x.restore();
 }
 
 export class UI {
@@ -187,7 +195,7 @@ export class UI {
     // Home base: a little house icon.
     {
       const [hx, hy, out] = to(g.stash.pos.x, g.stash.pos.z);
-      if (!out) houseIcon(x, hx, hy);
+      if (!out) houseIcon(x, hx, hy, 1.9);
     }
     for (const c of g.traffic.cars) {
       if (!c.owned) continue;
@@ -420,10 +428,8 @@ export class UI {
     x.textAlign = 'center';
     {
       const [hx, hy] = to(g.stash.pos.x, g.stash.pos.z);
-      houseIcon(x, hx, hy);
-      x.textAlign = 'right';
-      label('BASE CAMP', hx - 9, hy + 12, 11, '#e8c890');
-      x.textAlign = 'center';
+      houseIcon(x, hx, hy, 2.6);
+      label('BASE CAMP', hx, hy - 26, 14, '#e8c890');
     }
     const [kx, ky] = to((PARK_RECT.x0 + PARK_RECT.x1) / 2, PARK_RECT.z0 + 8);
     label('MAPLE PARK', kx, ky, 12, '#cfe8b0');
@@ -433,7 +439,7 @@ export class UI {
     x.rotate(-Math.PI / 2);
     label('EAST RIVER', 0, 0, 12, '#bfe0ff');
     x.restore();
-    const [sx, sy] = to(roadX(MAIN_I), roadZ(5) + 20);
+    const [sx, sy] = to(roadX(MAIN_I), roadZ(4));
     x.save();
     x.translate(sx, sy);
     x.rotate(-Math.PI / 2);

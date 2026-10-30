@@ -10,7 +10,7 @@ function pickDoors(g, from, n) {
   for (let k = 0; k < n; k++) {
     const near = doors.filter((d) => {
       const dd = Math.hypot(d.x - cur.x, d.z - cur.z);
-      return dd > 90 && dd < 330 && !pts.includes(d);
+      return dd > 50 && dd < 200 && !pts.includes(d);
     });
     const d = rng.pick(near.length ? near : doors);
     pts.push(d);
@@ -72,7 +72,7 @@ export const QUESTS = {
           const home = g.npcs.get('hendricks').pos;
           const yards = g.world.backyards.filter((y) => {
             const d = Math.hypot(y.x - home.x, y.z - home.z);
-            return d > 90 && d < 260;
+            return d > 45 && d < 180;
           });
           const y = rng.pick(yards);
           const x = y.x + rng.range(-y.w / 3, y.w / 3), z = y.z + rng.range(-y.w / 3, y.w / 3);
@@ -117,7 +117,7 @@ export const QUESTS = {
       {
         type: 'goto', text: 'Get a car and drive to the starting line', r: 8, vehicle: true,
         setup: (g, q) => {
-          q.data.start = { x: nodePos(MAIN_I, 4).x + LANE, z: g.world.pois.garage.door.z };
+          q.data.start = { x: nodePos(MAIN_I, 3).x + LANE, z: g.world.pois.garage.door.z };
         },
         at: (g, q) => q.data.start,
       },

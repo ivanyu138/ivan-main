@@ -7,7 +7,7 @@ const INSET = 1.0;
 // Ambient pedestrians strolling around block sidewalks. A fixed pool is recycled
 // around the player so the streets always feel populated.
 export class Pedestrians {
-  constructor(game, count = 22) {
+  constructor(game, count = 16) {
     this.game = game;
     this.rng = new RNG(4242);
     this.list = [];

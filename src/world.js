@@ -7,15 +7,15 @@ import { Colliders } from './collision.js';
 // east-west every 95m, so blocks are long rectangles lined with rowhouses.
 // Avenue 5 (x = 0) is Main Street. The river is off the west edge.
 // 2280m x 2280m ~= 2.0 square miles.
-export const HALF = 240;
-export const PX = 160;
-export const PZ = (2 * 240) / 7; // seven blocks fill the same width as three long blocks
+export const HALF = 140;
+export const PX = (2 * 140) / 3;
+export const PZ = (2 * 140) / 5; // five short blocks fill the same width as three long ones
 export const ROAD = 9;
 export const WALK = 2;
 export const NAX = 4; // avenues (x = const)
-export const NSZ = 8; // streets (z = const)
+export const NSZ = 6; // streets (z = const)
 export const NBX = 3;
-export const NBZ = 7;
+export const NBZ = 5;
 export const CURB = 0.15;
 export const LANE = 2.2;
 export const MAIN_I = 1;
@@ -26,7 +26,7 @@ export const roadX = (i) => -HALF + i * PX;
 export const roadZ = (j) => -HALF + j * PZ;
 export const nodePos = (i, j) => ({ x: roadX(i), z: roadZ(j) });
 
-const PARK = { i0: 2, i1: 2, j0: 4, j1: 5 };
+const PARK = { i0: 2, i1: 2, j0: 3, j1: 4 };
 export const isParkBlock = (bi, bj) => bi >= PARK.i0 && bi <= PARK.i1 && bj >= PARK.j0 && bj <= PARK.j1;
 export const PARK_RECT = {
   x0: roadX(PARK.i0) + ROAD / 2, x1: roadX(PARK.i1 + 1) - ROAD / 2,
@@ -80,9 +80,8 @@ export function segExists(i, j, dx, dz) {
 
 export function district(bi, bj) {
   if (isParkBlock(bi, bj)) return 'park';
-  if (bj === 0) return bi === MAIN_I ? 'plaza' : 'downtown';
+  if (bj === 0) return bi === MAIN_I ? 'plaza' : bi === 0 ? 'industrial' : 'downtown';
   if (PLAYGROUNDS.has(bi + ',' + bj)) return 'playground';
-  if (bi === 0 && bj === NBZ - 1) return 'industrial';
   return 'residential';
 }
 
@@ -94,9 +93,9 @@ export const POI_DEFS = [
   { id: 'mart', name: 'CORNER BODEGA', block: [1, 2], color: '#3f8a5a', shop: 'mart' },
   { id: 'pizza', name: "TONY'S PIZZA", block: [0, 2], color: '#e0a030', shop: 'pizza' },
   { id: 'gym', name: 'IRON GYM', block: [1, 3], color: '#7a3a8a', shop: 'gym' },
-  { id: 'garage', name: "VIC'S GARAGE", block: [0, 4], color: '#6a6a70', shop: 'garage' },
-  { id: 'police', name: 'PRECINCT 78', block: [1, 4], color: '#3a4a7a' },
-  { id: 'saloon', name: 'SALOON', block: [1, 5], color: '#8a5a32' },
+  { id: 'garage', name: "VIC'S GARAGE", block: [0, 3], color: '#6a6a70', shop: 'garage' },
+  { id: 'police', name: 'PRECINCT 78', block: [0, 4], color: '#3a4a7a' },
+  { id: 'saloon', name: 'SALOON', block: [1, 4], color: '#8a5a32' },
 ];
 
 const BROWNSTONE = ['#7a4a35', '#6b4030', '#8a5a40', '#5e3d2e', '#9a6a4a', '#b39a7a', '#c4b49a', '#8a3f2f', '#9a4a36', '#7a3a2e', '#a8584a'];
@@ -269,13 +268,13 @@ export class World {
     } else this.rowhouseRow(ax0, ax1, L, 'n', rng);
     this.rowhouseRow(ax0, ax1, L, 's', rng);
     // Backyards run down the middle of the block.
-    const bz0 = L.z0 + 19, bz1 = L.z1 - 19, mz = (bz0 + bz1) / 2;
+    const bz0 = L.z0 + 17.8, bz1 = L.z1 - 17.8, mz = (bz0 + bz1) / 2;
     const m = this.markB;
     for (let x = ax0 + 14; x < ax1; x += rng.range(14, 22)) {
       m.box(x, CURB, mz, 0.08, 1.3, bz1 - bz0, '#7a5a3a');
       if (rng.chance(0.5)) this.addTree(x + rng.range(-8, 8), mz + rng.range(-1, 1) * Math.max(0, (bz1 - bz0) / 2 - 2), rng);
     }
-    for (let k = 0; k < 3; k++) this.backyards.push({ x: ax0 + ((k + 0.5) * (ax1 - ax0)) / 3, z: mz, w: 26 });
+    for (let k = 0; k < 3; k++) this.backyards.push({ x: ax0 + ((k + 0.5) * (ax1 - ax0)) / 3, z: mz, w: 9 });
     this.streetTrees(blockRect(bi, bj), rng);
   }
 
@@ -475,20 +474,20 @@ export class World {
   }
 
   genPlaza(L, rng) {
-    const zc = (L.z0 + L.z1) / 2, fx = L.x0 + 64, poi = POI_DEFS.find((p) => p.id === 'townhall');
-    this.genPOI(poi, fx, zc, -1, 40, 30, 13, false);
+    const zc = (L.z0 + L.z1) / 2, fx = L.x0 + 52, poi = POI_DEFS.find((p) => p.id === 'townhall');
+    this.genPOI(poi, fx, zc, -1, 30, 24, 13, false);
     const b = this.chunkB(fx, zc);
     for (let i = 0; i < 6; i++) {
-      const z = zc - 15 + i * 6;
+      const z = zc - 12.5 + i * 5;
       b.box(fx - 2, CURB, z, 1.1, 12, 1.1, '#efe9da');
       this.colliders.addBox(fx - 2.55, z - 0.55, fx - 1.45, z + 0.55, 13);
     }
-    b.box(fx - 2, CURB + 12, zc, 3, 1, 44, '#d0c8b4');
-    b.prism(fx + 15, CURB + 13, zc, 8, 3, 12, '#c9c1ac');
-    b.prism(fx + 15, CURB + 16, zc, 5.5, 3.5, 12, '#6f9a8a', '#5f8a7a');
-    b.box(fx + 15, CURB + 19.5, zc, 0.3, 4, 0.3, '#444');
+    b.box(fx - 2, CURB + 12, zc, 3, 1, 32, '#d0c8b4');
+    b.prism(fx + 12, CURB + 13, zc, 7, 3, 12, '#c9c1ac');
+    b.prism(fx + 12, CURB + 16, zc, 4.8, 3.2, 12, '#6f9a8a', '#5f8a7a');
+    b.box(fx + 12, CURB + 19.2, zc, 0.3, 4, 0.3, '#444');
     // Plaza with a fountain between Main Street and the hall.
-    const px = L.x0 + 30, m = this.markB;
+    const px = L.x0 + 22, m = this.markB;
     m.quadH(px, zc - 3, fx, zc + 3, CURB + 0.01, '#bdb6a6');
     m.quadH(px - 3, L.z0, px + 3, L.z1, CURB + 0.01, '#bdb6a6');
     m.quadH(L.x0, zc - 3, px, zc + 3, CURB + 0.01, '#bdb6a6');
@@ -498,23 +497,22 @@ export class World {
     b.prism(px, CURB + 2.6, zc, 1.8, 0.3, 12, '#b8b2a4', '#4f9fd0');
     this.colliders.addCircle(px, zc, 6.1, 1);
     this.mapCircles.push([px, zc, 6, '#4f9fd0']);
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2;
-      this.addTree(px + Math.cos(a) * 21, zc + Math.sin(a) * 18, rng, 1.1);
+    for (let i = 0; i < 12; i++) {
+      const a = ((i + 0.5) / 12) * Math.PI * 2;
+      this.addTree(px + Math.cos(a) * 14, zc + Math.sin(a) * 14, rng, 1.05);
     }
-    this.addBuilding(fx + 52, zc, 30, rng.range(40, 70), 40, rng.pick(TOWERS), WIN_TOWER);
     this.plaza = { x: px, z: zc, hall: fx };
   }
 
   genDowntown(L, rng, bi, bj) {
-    const n = 3, pw = (L.x1 - L.x0) / n, maxD = L.z1 - L.z0 - 8;
+    const n = 2, pw = (L.x1 - L.x0) / n, maxD = L.z1 - L.z0 - 8;
     for (let k = 0; k < n; k++) {
       const px = L.x0 + (k + 0.5) * pw, pz = (L.z0 + L.z1) / 2;
       if (rng.chance(0.1)) {
-        for (let i = 0; i < 4; i++) this.addTree(px + rng.range(-18, 18), pz + rng.range(-25, 25), rng);
+        for (let i = 0; i < 4; i++) this.addTree(px + rng.range(-14, 14), pz + rng.range(-12, 12), rng);
         continue;
       }
-      const w = rng.range(30, pw - 6), d = Math.min(maxD, rng.range(40, 60)), h = rng.range(30, 85) * (bj === 0 ? 1.3 : 1);
+      const w = rng.range(pw - 16, pw - 6), d = Math.min(maxD, rng.range(28, 40)), h = rng.range(30, 85) * (bj === 0 ? 1.3 : 1);
       const c = rng.pick(TOWERS);
       this.addBuilding(px, pz, w, h, d, c, WIN_TOWER);
       const b = this.chunkB(px, pz);
@@ -533,9 +531,9 @@ export class World {
   genPlayground(L, rng, bi, bj) {
     const cx = (L.x0 + L.x1) / 2, cz = (L.z0 + L.z1) / 2, m = this.markB, b = this.chunkB(cx, cz);
     // Basketball court
-    m.quadH(cx - 45, cz - 14, cx - 17, cz + 14, CURB + 0.01, '#c0704a');
-    m.quadH(cx - 31.1, cz - 14, cx - 30.9, cz + 14, CURB + 0.02, '#f0f0f0');
-    for (const x of [cx - 44, cx - 18]) b.box(x, CURB, cz, 0.2, 3.2, 0.2, '#444');
+    m.quadH(cx - 36, cz - 13, cx - 8, cz + 13, CURB + 0.01, '#c0704a');
+    m.quadH(cx - 22.1, cz - 13, cx - 21.9, cz + 13, CURB + 0.02, '#f0f0f0');
+    for (const x of [cx - 35, cx - 9]) b.box(x, CURB, cz, 0.2, 3.2, 0.2, '#444');
     // Play structure
     b.box(cx + 20, CURB, cz, 6, 0.3, 6, '#2f7ac0');
     for (const [dx, dz] of [[-2.8, -2.8], [2.8, -2.8], [-2.8, 2.8], [2.8, 2.8]]) b.box(cx + 20 + dx, CURB, cz + dz, 0.25, 2.6, 0.25, '#e0c040');
@@ -543,13 +541,13 @@ export class World {
     b.box(cx + 26, CURB, cz, 4, 1.4, 1, '#e07a30');
     this.colliders.addBox(cx + 17, cz - 3, cx + 23, cz + 3, 2.7);
     m.quadH(cx + 10, cz - 10, cx + 32, cz + 10, CURB + 0.01, '#8a7a6a');
-    this.rect(cx - 45, cz - 14, cx - 17, cz + 14, '#c0704a');
+    this.rect(cx - 36, cz - 13, cx - 8, cz + 13, '#c0704a');
     for (let i = 0; i < 14; i++) {
       const x = rng.range(L.x0 + 3, L.x1 - 3), z = rng.pick([L.z0 + 3, L.z1 - 3]) + rng.range(-1, 1);
       this.addTree(x, z, rng);
     }
     this.parks[bi + ',' + bj] = { x: cx, z: cz };
-    this.backyards.push({ x: cx + 60, z: cz, w: 30 });
+    this.backyards.push({ x: cx + 21, z: cz + 14, w: 12 });
     this.streetTrees(blockRect(bi, bj), rng);
   }
 
@@ -580,7 +578,7 @@ export class World {
       this.rect(a, b2, c, d, path);
     }
     const onPath = (x, z) => strips.some(([a, b2, c, d]) => x > a - 2 && x < c + 2 && z > b2 - 2 && z < d + 2);
-    for (let k = 0; k < 160; k++) {
+    for (let k = 0; k < 80; k++) {
       const x = rng.range(L.x0 + 2, L.x1 - 2), z = rng.range(L.z0 + 2, L.z1 - 2);
       if (onPath(x, z) || [lake, pond].some((w) => Math.hypot(x - w.x, z - w.z) < w.r + 5)) continue;
       if (Math.hypot(x - meadow.x, z - meadow.z) < meadow.r) continue;
@@ -594,15 +592,15 @@ export class World {
     this.parks.prospect = { x: lake.x - lake.r - 5, z: lake.z, lake };
     this.parks.watch = { x: meadow.x, z: meadow.z };
     for (const [x, z] of [[L.x0 + 20, L.z1 - 18], [L.x1 - 20, L.z0 + 20], [L.x1 - 18, L.z1 - 16]]) {
-      this.backyards.push({ x, z, w: 30 });
+      this.backyards.push({ x, z, w: 20 });
     }
   }
 
   genIndustrial(L, rng) {
-    const n = 3, pw = (L.x1 - L.x0) / n;
+    const n = 2, pw = (L.x1 - L.x0) / n;
     for (let k = 0; k < n; k++) {
       const px = L.x0 + (k + 0.5) * pw, pz = (L.z0 + L.z1) / 2;
-      const w = rng.range(30, pw - 6), d = Math.min(L.z1 - L.z0 - 8, rng.range(40, 60)), h = rng.range(8, 13);
+      const w = rng.range(pw - 16, pw - 6), d = Math.min(L.z1 - L.z0 - 8, rng.range(28, 40)), h = rng.range(8, 13);
       const c = rng.pick(['#8d9196', '#9a7f66', '#6f7f8f', '#8a8470', '#8a3f2f']);
       this.addBuilding(px, pz, w, h, d, c, WIN_WARE);
       const b = this.chunkB(px, pz);

@@ -42,8 +42,8 @@ export const NPC_DEFS = {
     name: 'Sock Sal',
     look: { skin: '#e0ac85', hair: '#9a9a9a', shirt: '#4ac9c0', pants: '#8a4ac9', shoes: '#e04848' },
     at: () => {
-      const L = lotRect(0, 3);
-      return { x: L.x1 + 1.2, z: (L.z0 + L.z1) / 2 };
+      const L = lotRect(0, 2);
+      return { x: L.x1 + 1.2, z: L.z1 - 3 };
     },
     facing: Math.PI / 2,
     wants: 'sock',
