@@ -182,7 +182,7 @@ export class Car {
 }
 
 export class Traffic {
-  constructor(game, count = 45) {
+  constructor(game, count = 16) {
     this.game = game;
     this.rng = new RNG(99);
     this.cars = [];
@@ -303,8 +303,8 @@ export class Traffic {
       const d = Math.hypot(car.pos.x - p.x, car.pos.z - p.z);
       if (car.mode === 'player') car.drive(dt, g.input, g.player.canAct(), g.rpg);
       else if (car.mode === 'ai') {
-        if (d > 380) this.spawnNear(car, 230, 330);
-        else this.aiUpdate(car, dt);
+        // The neighborhood is small enough that traffic just keeps circulating.
+        this.aiUpdate(car, dt);
       } else {
         if (d > 420 && !car.owned) this.spawnNear(car, 230, 330);
         else car.coast(dt);

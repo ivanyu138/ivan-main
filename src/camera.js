@@ -48,7 +48,7 @@ export class CameraRig {
     const dx = Math.sin(this.yaw) * cp, dy = sp, dz = Math.cos(this.yaw) * cp;
     // March out from the target; stop short of walls so the camera never clips inside buildings.
     let d = 0.5;
-    const col = g.world.colliders;
+    const col = g.env().colliders;
     while (d < this.dist) {
       const nd = Math.min(this.dist, d + 0.4);
       if (col.pointBlocked(this.cur.x + dx * nd, this.cur.y + dy * nd, this.cur.z + dz * nd, 0.25, true)) break;

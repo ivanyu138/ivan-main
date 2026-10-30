@@ -7,12 +7,15 @@ export const ITEMS = {
   pizza: { name: 'Pizza Slice', desc: '+35 HP', use: (g) => g.rpg.heal(35) },
   burger: { name: 'Burger', desc: 'Full heal', use: (g) => g.rpg.heal(9999) },
   treats: { name: 'Cat Treats', desc: '+30 HP', use: (g) => g.rpg.heal(30) },
+  milk: { name: 'Saucer of Milk', desc: '+40 HP', use: (g) => g.rpg.heal(40) },
+  sardines: { name: 'Tin of Sardines', desc: '+60 HP', use: (g) => g.rpg.heal(60) },
 };
 
 export const SHOPS = {
   mart: { title: 'Corner Bodega', stock: [{ item: 'soda', price: 5 }, { item: 'energy', price: 14 }, { item: 'bandage', price: 22 }] },
   diner: { title: "Lou's Diner", stock: [{ item: 'coffee', price: 4 }, { item: 'pie', price: 10 }, { item: 'burger', price: 18 }] },
   pizza: { title: "Tony's Pizza", stock: [{ item: 'pizza', price: 8 }] },
+  saloon: { title: 'The Golden Spur', stock: [{ item: 'milk', price: 6 }, { item: 'sardines', price: 12 }] },
   clinic: { title: 'St. Mercy Clinic', stock: [{ service: 'heal', label: 'Full treatment', price: 30 }] },
   gym: {
     title: 'Iron Gym',

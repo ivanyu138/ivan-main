@@ -13,6 +13,8 @@ import { Pickups } from './pickups.js';
 import { Litter } from './litter.js';
 import { Animals } from './animals.js';
 import { Stash } from './stash.js';
+import { Saloon } from './saloon.js';
+import { BaseCamp } from './basecamp.js';
 import { Quests, QUESTS } from './quests.js';
 import { Sfx } from './audio.js';
 import { CatSelect } from './select.js';
@@ -63,11 +65,16 @@ class Game {
     this.pickups = new Pickups(this);
     this.litter = new Litter(this);
     this.stash = new Stash(this);
+    this.baseCamp = new BaseCamp(this);
+    this.saloon = new Saloon(this);
+    this.inside = null; // the interior the cat is in, if any
+    this.outdoorEnv = { colliders: this.world.colliders, abs: false, ground: (x, z) => groundHeight(x, z) };
     this.quests = new Quests(this);
     this.select = new CatSelect();
 
     this.toSpawn();
     if (!this.load()) this.pickups.initGnomes([]);
+    this.baseCamp.refresh();
 
     addEventListener('resize', () => this.resize());
     this.resize();
@@ -181,7 +188,7 @@ class Game {
   // ------------------------------------------------------------ save / load
 
   save() {
-    const p = this.player.pos, car = this.traffic.cars.find((c) => c.owned);
+    const p = this.inside ? this.world.pois.saloon.door : this.player.pos, car = this.traffic.cars.find((c) => c.owned);
     const data = {
       v: 1, rpg: this.rpg.serialize(), quests: this.quests.serialize(), pos: [p.x, p.z], time: this.sky.time,
       car: car && { type: car.type, color: car.color, x: car.pos.x, z: car.pos.z, h: car.heading, hp: car.hp },
@@ -213,6 +220,33 @@ class Game {
   }
 
   // ------------------------------------------------------------ actions
+
+  // Prompt lines for carrying things in the cat's mouth, and the G key that goes with them.
+  carryPrompt(text, stash) {
+    const p = this.player, inp = this.input, add = (t) => (text = text ? text + '\n' + t : t);
+    const atStash = stash && stash.near(p.pos);
+    if (p.carry) add(atStash ? `[G] Add the ${p.carry.name} to your stash` : `[G] Drop the ${p.carry.name}`);
+    else {
+      const w = p.mouthWorld(), near = this.carryHost().nearest(w.x, w.z, 0.9, p.pos.y);
+      if (near) add(`[G] Pick up the ${near.name}`);
+      else if (atStash) add(`Base camp stash: ${stash.kinds.length} treasures`);
+    }
+    if (inp.pressed('KeyG')) {
+      if (p.carry && atStash) stash.add(p.release());
+      else if (p.carry) p.drop();
+      else p.grab();
+    }
+    return text;
+  }
+
+  // Where things the cat picks up and drops live: the street, or the interior it's in.
+  carryHost() {
+    return this.inside || this.litter;
+  }
+
+  env() {
+    return this.inside ? this.inside.env : this.outdoorEnv;
+  }
 
   // Quest markers, plus a "?" over anyone who wants what the cat is carrying.
   npcMarker(n) {
@@ -294,6 +328,7 @@ class Game {
   }
 
   onMeow() {
+    if (this.inside) return this.inside.onMeow();
     const p = this.player.pos;
     // Whiskers answers if she's within earshot, which pins down where she's hiding.
     const cat = this.quests.state.cat.data.item;
@@ -410,6 +445,7 @@ class Game {
   }
 
   die() {
+    if (this.inside) this.inside.exit();
     this.dead = true;
     this.deadT = 3.5;
     this.ui.showDead(true);
@@ -468,6 +504,14 @@ class Game {
       return;
     }
 
+    if (this.inside) {
+      const r = this.inside.interaction(inp, this.dt || 0.016);
+      const text = this.carryPrompt(r.text, null);
+      ui.prompt(text);
+      if (inp.pressed('KeyT') && r.action) r.action();
+      return;
+    }
+
     let text = '', action = null;
     const item = this.pickups.nearestInteractable(p.pos, 2);
     const npc = this.npcs.nearest(p.pos, 2.6);
@@ -484,20 +528,17 @@ class Game {
         this.sfx.play('door');
         ui.openPanel('shop', poi.shop);
       };
+    } else {
+      const saloon = this.world.pois.saloon, buddy = this.baseCamp.nearest(p.pos, 1.6);
+      if (Math.hypot(saloon.door.x - p.pos.x, saloon.door.z - p.pos.z) < 2.6) {
+        text = '[T] Enter the Saloon';
+        action = () => this.saloon.enter();
+      } else if (buddy) {
+        text = `[T] Hang out with ${buddy.name}`;
+        action = () => this.baseCamp.talk(buddy);
+      }
     }
-    // Carrying things in the cat's mouth.
-    const atStash = this.stash.near(p.pos);
-    if (p.carry) text += (text ? '\n' : '') + (atStash ? `[G] Add the ${p.carry.name} to your stash` : `[G] Drop the ${p.carry.name}`);
-    else {
-      const w = p.mouthWorld(), near = this.litter.nearest(w.x, w.z, 0.9);
-      if (near) text += (text ? '\n' : '') + `[G] Pick up the ${near.name}`;
-      else if (atStash) text += (text ? '\n' : '') + `Your stash: ${this.stash.kinds.length} treasures`;
-    }
-    if (inp.pressed('KeyG')) {
-      if (p.carry && atStash) this.stash.add(p.release());
-      else if (p.carry) p.drop();
-      else p.grab();
-    }
+    text = this.carryPrompt(text, this.stash);
     const car = this.traffic.nearest(p.pos, 1.6);
     if (car) text += (text ? '\n' : '') + `[F] ${car.mode === 'ai' ? 'Carjack' : 'Get in'} ${car.owned ? 'your ' : ''}${car.spec.name}`;
     ui.prompt(text);
@@ -507,13 +548,24 @@ class Game {
 
   update(dt) {
     this.time += dt;
+    this.dt = dt;
     this.handleKeys();
     if (this.dead) {
       this.deadT -= dt;
       if (this.deadT < 0) this.respawn();
     }
     this.player.update(dt);
+    if (this.inside) {
+      // The street waits while the cat is indoors.
+      this.inside.update(dt);
+      this.rpg.update(dt);
+      this.cam.update(dt);
+      this.sfx.setEngine(false, 0);
+      this.ui.update();
+      return;
+    }
     this.traffic.update(dt);
+    this.baseCamp.update(dt);
     this.peds.update(dt);
     this.animals.update(dt);
     this.npcs.update(dt);
@@ -565,7 +617,7 @@ class Game {
         else if (inp.pressed('Digit2')) this.pauseChangeCat();
       }
     }
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.inside ? this.inside.scene : this.scene, this.camera);
     this.input.endFrame();
   }
 }

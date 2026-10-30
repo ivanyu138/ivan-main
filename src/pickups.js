@@ -49,7 +49,7 @@ export class Pickups {
     this.gnomeSpots = [];
     while (this.gnomeSpots.length < 10 && yards.length) {
       const y = yards.splice(r.int(0, yards.length - 1), 1)[0];
-      if (Math.hypot(y.x, y.z) < 200 && this.gnomeSpots.length < 8) continue;
+      if (Math.hypot(y.x, y.z) < 90 && this.gnomeSpots.length < 6) continue;
       this.gnomeSpots.push({ x: y.x + r.range(-y.w / 3, y.w / 3), z: y.z + r.range(-y.w / 3, y.w / 3) });
     }
     this.cashTimer = 0;

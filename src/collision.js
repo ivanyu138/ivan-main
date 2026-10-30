@@ -27,8 +27,9 @@ export class Colliders {
     }
   }
 
-  addBox(x0, z0, x1, z1, h = 10) {
-    const b = { type: 0, x0, z0, x1, z1, h, _s: 0 };
+  // y0..h is the obstacle's vertical extent (y0 defaults to the ground, so it blocks from below).
+  addBox(x0, z0, x1, z1, h = 10, y0 = -Infinity) {
+    const b = { type: 0, x0, z0, x1, z1, h, y0, _s: 0 };
     this._insert(b, x0, z0, x1, z1);
     return b;
   }
@@ -63,7 +64,7 @@ export class Colliders {
     const list = this.query(p.x - r, p.z - r, p.x + r, p.z + r, this._tmp);
     let hit = false, nx = 0, nz = 0;
     for (const o of list) {
-      if (y > o.h) continue;
+      if (y > o.h || (o.y0 !== undefined && y < o.y0)) continue;
       if (o.type === 0) {
         const cx = clamp(p.x, o.x0, o.x1), cz = clamp(p.z, o.z0, o.z1);
         const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz;
@@ -103,7 +104,7 @@ export class Colliders {
   pointBlocked(x, y, z, m = 0, boxesOnly = false) {
     const list = this.query(x - m, z - m, x + m, z + m, this._tmp);
     for (const o of list) {
-      if (y > o.h) continue;
+      if (y > o.h || (o.y0 !== undefined && y < o.y0)) continue;
       if (o.type === 0) {
         if (x > o.x0 - m && x < o.x1 + m && z > o.z0 - m && z < o.z1 + m) return true;
       } else if (!boxesOnly && Math.hypot(x - o.x, z - o.z) < o.r + m) return true;

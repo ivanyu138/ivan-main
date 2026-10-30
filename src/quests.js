@@ -117,14 +117,14 @@ export const QUESTS = {
       {
         type: 'goto', text: 'Get a car and drive to the starting line', r: 8, vehicle: true,
         setup: (g, q) => {
-          q.data.start = { x: nodePos(MAIN_I, 12).x + LANE, z: g.world.pois.garage.door.z };
+          q.data.start = { x: nodePos(MAIN_I, 4).x + LANE, z: g.world.pois.garage.door.z };
         },
         at: (g, q) => q.data.start,
       },
       {
         type: 'route', text: 'RACE! Hit every checkpoint', label: 'Checkpoint', r: 9, vehicle: true,
         setup: (g, q) => {
-          q.data.points = raceRoute([MAIN_I, 12], 8);
+          q.data.points = raceRoute([MAIN_I, 4], 8);
           let total = 0, prev = q.data.start;
           for (const p of q.data.points) {
             total += Math.abs(p.x - prev.x) + Math.abs(p.z - prev.z);

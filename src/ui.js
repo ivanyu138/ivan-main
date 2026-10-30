@@ -114,6 +114,19 @@ export class UI {
 
   drawMinimap() {
     const g = this.game, x = this.mmCtx, W = this.mm.width, R = W / 2;
+    if (g.inside) {
+      // Indoors: just say where you are.
+      x.fillStyle = '#2a1a10';
+      x.fillRect(0, 0, W, W);
+      x.textAlign = 'center';
+      x.fillStyle = '#f4d58a';
+      x.font = 'bold 15px monospace';
+      x.fillText('GOLDEN SPUR', R, R - 8);
+      x.fillStyle = '#cfd8e6';
+      x.font = '12px monospace';
+      x.fillText(g.inside.floorName(g.player.pos.y), R, R + 12);
+      return;
+    }
     const p = g.player.pos, yaw = g.cam.yaw;
     const ppm = g.player.vehicle ? 0.42 : 0.75;
     x.save();
@@ -397,7 +410,7 @@ export class UI {
       const [hx, hy] = to(g.stash.pos.x, g.stash.pos.z);
       houseIcon(x, hx, hy);
       x.textAlign = 'right';
-      label('YOUR STASH', hx - 9, hy + 12, 11, '#e8c890');
+      label('BASE CAMP', hx - 9, hy + 12, 11, '#e8c890');
       x.textAlign = 'center';
     }
     const park = g.world.parks.prospect.lake;

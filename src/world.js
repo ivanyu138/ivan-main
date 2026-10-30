@@ -7,33 +7,33 @@ import { Colliders } from './collision.js';
 // east-west every 95m, so blocks are long rectangles lined with rowhouses.
 // Avenue 5 (x = 0) is Main Street. The river is off the west edge.
 // 2280m x 2280m ~= 2.0 square miles.
-export const HALF = 1140;
+export const HALF = 342;
 export const PX = 228;
-export const PZ = 95;
+export const PZ = (2 * 342) / 7; // seven blocks fill the same width as three long blocks
 export const ROAD = 14;
 export const WALK = 3;
-export const NAX = 11; // avenues (x = const)
-export const NSZ = 25; // streets (z = const)
-export const NBX = 10;
-export const NBZ = 24;
+export const NAX = 4; // avenues (x = const)
+export const NSZ = 8; // streets (z = const)
+export const NBX = 3;
+export const NBZ = 7;
 export const CURB = 0.15;
 export const LANE = 3.4;
-export const MAIN_I = 5;
-export const MAP_PX = 0.5; // minimap pixels per meter
-export const MAP_EXT = 1200; // minimap covers -MAP_EXT..MAP_EXT
+export const MAIN_I = 1;
+export const MAP_PX = 1.5; // minimap pixels per meter
+export const MAP_EXT = HALF + 60; // minimap covers -MAP_EXT..MAP_EXT
 
 export const roadX = (i) => -HALF + i * PX;
 export const roadZ = (j) => -HALF + j * PZ;
 export const nodePos = (i, j) => ({ x: roadX(i), z: roadZ(j) });
 
-const PARK = { i0: 7, i1: 8, j0: 12, j1: 17 };
+const PARK = { i0: 2, i1: 2, j0: 4, j1: 5 };
 export const isParkBlock = (bi, bj) => bi >= PARK.i0 && bi <= PARK.i1 && bj >= PARK.j0 && bj <= PARK.j1;
 export const PARK_RECT = {
   x0: roadX(PARK.i0) + ROAD / 2, x1: roadX(PARK.i1 + 1) - ROAD / 2,
   z0: roadZ(PARK.j0) + ROAD / 2, z1: roadZ(PARK.j1 + 1) - ROAD / 2,
 };
 const inPark = (x, z) => x > PARK_RECT.x0 && x < PARK_RECT.x1 && z > PARK_RECT.z0 && z < PARK_RECT.z1;
-const PLAYGROUNDS = new Set(['2,8', '8,4', '1,20', '3,17']);
+const PLAYGROUNDS = new Set(['2,2']);
 
 export function blockRect(bi, bj) {
   return { x0: roadX(bi) + ROAD / 2, x1: roadX(bi + 1) - ROAD / 2, z0: roadZ(bj) + ROAD / 2, z1: roadZ(bj + 1) - ROAD / 2 };
@@ -78,23 +78,23 @@ export function segExists(i, j, dx, dz) {
 
 export function district(bi, bj) {
   if (isParkBlock(bi, bj)) return 'park';
-  if (bj <= 2 && bi >= 3 && bi <= 6) return 'downtown';
-  if (bi === 5 && bj === 3) return 'plaza';
+  if (bj === 0) return bi === MAIN_I ? 'plaza' : 'downtown';
   if (PLAYGROUNDS.has(bi + ',' + bj)) return 'playground';
-  if (bi === 0 && bj >= 13) return 'industrial';
+  if (bi === 0 && bj === NBZ - 1) return 'industrial';
   return 'residential';
 }
 
 // Shops on Main Street: blocks with bi = 4 face east onto it, bi = 5 face west.
 export const POI_DEFS = [
-  { id: 'townhall', name: 'BOROUGH HALL', block: [5, 3], color: '#d8d0bc' },
-  { id: 'clinic', name: 'ST. MERCY CLINIC', block: [5, 5], color: '#dfe6e8', shop: 'clinic' },
-  { id: 'diner', name: "LOU'S DINER", block: [4, 6], color: '#c94a4a', shop: 'diner' },
-  { id: 'mart', name: 'CORNER BODEGA', block: [5, 7], color: '#3f8a5a', shop: 'mart' },
-  { id: 'pizza', name: "TONY'S PIZZA", block: [4, 9], color: '#e0a030', shop: 'pizza' },
-  { id: 'gym', name: 'IRON GYM', block: [5, 10], color: '#7a3a8a', shop: 'gym' },
-  { id: 'garage', name: "VIC'S GARAGE", block: [4, 12], color: '#6a6a70', shop: 'garage' },
-  { id: 'police', name: 'PRECINCT 78', block: [5, 13], color: '#3a4a7a' },
+  { id: 'townhall', name: 'BOROUGH HALL', block: [1, 0], color: '#d8d0bc' },
+  { id: 'clinic', name: 'ST. MERCY CLINIC', block: [1, 1], color: '#dfe6e8', shop: 'clinic' },
+  { id: 'diner', name: "LOU'S DINER", block: [0, 1], color: '#c94a4a', shop: 'diner' },
+  { id: 'mart', name: 'CORNER BODEGA', block: [1, 2], color: '#3f8a5a', shop: 'mart' },
+  { id: 'pizza', name: "TONY'S PIZZA", block: [0, 2], color: '#e0a030', shop: 'pizza' },
+  { id: 'gym', name: 'IRON GYM', block: [1, 3], color: '#7a3a8a', shop: 'gym' },
+  { id: 'garage', name: "VIC'S GARAGE", block: [0, 4], color: '#6a6a70', shop: 'garage' },
+  { id: 'police', name: 'PRECINCT 78', block: [1, 4], color: '#3a4a7a' },
+  { id: 'saloon', name: 'SALOON', block: [1, 5], color: '#8a5a32' },
 ];
 
 const BROWNSTONE = ['#7a4a35', '#6b4030', '#8a5a40', '#5e3d2e', '#9a6a4a', '#b39a7a', '#c4b49a', '#8a3f2f', '#9a4a36', '#7a3a2e', '#a8584a'];
@@ -251,7 +251,7 @@ export class World {
   }
 
   genResidential(bi, bj, L, rng) {
-    const mainEnd = bj >= 3 ? (bi === MAIN_I - 1 ? 'e' : bi === MAIN_I ? 'w' : null) : null;
+    const mainEnd = bj >= 1 ? (bi === MAIN_I - 1 ? 'e' : bi === MAIN_I ? 'w' : null) : null;
     const poi = POI_DEFS.find((p) => p.block[0] === bi && p.block[1] === bj);
     for (const end of ['w', 'e']) {
       if (end === mainEnd) this.storefrontRow(L, end, poi, rng);
@@ -338,7 +338,8 @@ export class World {
         z += w;
       }
     }
-    if (poi) this.genPOI(poi, fx, zc, s, 30, 16, rng.range(9, 12));
+    if (poi && poi.id === 'saloon') this.genSaloon(poi, fx, zc, s);
+    else if (poi) this.genPOI(poi, fx, zc, s, 30, 16, rng.range(9, 12));
   }
 
   storefront(fx, s, za, zb, rng) {
@@ -367,6 +368,43 @@ export class World {
     const uv = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
     if (s > 0) this.signB.quad([fx, y0, zb], [fx, y0, za], [fx, y1, za], [fx, y1, zb], '#ffffff', uv);
     else this.signB.quad([fx, y0, za], [fx, y0, zb], [fx, y1, zb], [fx, y1, za], '#ffffff', uv);
+  }
+
+  // A two-story Western saloon with a false front, a balcony over the sidewalk and swinging
+  // doors. This is only the outside; the inside is its own scene (saloon.js).
+  genSaloon(poi, fx, zc, s) {
+    const d = 18, wz = 28, h = 8.2, cx = fx - s * (d / 2), trim = '#4a2e18';
+    this.addBuilding(cx, zc, d, h, wz, '#8a5a32', WIN_ROW);
+    const b = this.chunkB(cx, zc);
+    b.box(fx - s * 0.25, CURB, zc, 0.5, 11.5, wz + 1, '#9a6a3a', WIN_ROW);
+    b.box(fx - s * 0.1, CURB + 11.5, zc, 0.9, 0.4, wz + 1.6, trim);
+    for (let i = 0; i < 6; i++) b.box(fx + s * 0.02, CURB + 0.2, zc - wz / 2 + 1 + i * 0.12, 0.04, 11, 0.04, trim);
+    // Balcony over the sidewalk, held up by posts.
+    b.box(fx + s * 1.5, CURB + 3.8, zc, 3, 0.25, wz, trim);
+    b.box(fx + s * 2.9, CURB + 4.05, zc, 0.08, 0.9, wz, '#6a4426');
+    b.box(fx + s * 2.9, CURB + 4.9, zc, 0.16, 0.1, wz + 0.2, trim);
+    for (const dz of [-13, -8.5, -4, 4, 8.5, 13]) {
+      const px = fx + s * 2.8, pz = zc + dz;
+      b.box(px, CURB, pz, 0.22, 3.8, 0.22, trim);
+      this.colliders.addBox(px - 0.11, pz - 0.11, px + 0.11, pz + 0.11, 4);
+    }
+    // Doorway with swinging half doors.
+    b.box(fx + s * 0.06, CURB, zc, 0.12, 2.7, 2.3, '#1a120c');
+    for (const dz of [-0.55, 0.55]) b.box(fx + s * 0.16, CURB + 0.55, zc + dz, 0.08, 1.25, 1.0, '#c08a4a');
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.8), new THREE.MeshBasicMaterial({ map: textTexture('SALOON', '#5a2e14', '#f4d58a') }));
+    sign.position.set(fx + s * 0.12, CURB + 9.4, zc);
+    sign.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2;
+    this.scene.add(sign);
+    const door = { x: fx + s * 2.2, z: zc };
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.9, 1.3, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.7, depthWrite: false }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(door.x, CURB + 0.03, door.z);
+    this.scene.add(ring);
+    const curb = { x: roadX(MAIN_I) - s * (ROAD / 2 - 1.8), z: zc + 18, h: s > 0 ? 0 : Math.PI };
+    this.pois[poi.id] = { ...poi, door, curb, cx, cz: zc, facing: s };
   }
 
   // A landmark building facing Main Street (east or west, s = +1 faces east).
@@ -480,15 +518,16 @@ export class World {
     const L = { x0: r.x0 + WALK, x1: r.x1 - WALK, z0: r.z0 + WALK, z1: r.z1 - WALK };
     g.quadH(L.x0, L.z0, L.x1, L.z1, CURB, '#4f8c3a');
     this.rect(L.x0, L.z0, L.x1, L.z1, '#4f8c3a');
-    const lake = { x: L.x0 + 200, z: L.z0 + 370, r: 70 }, pond = { x: L.x0 + 70, z: L.z0 + 110, r: 22 };
-    const meadow = { x: L.x0 + 290, z: L.z0 + 150, r: 85 };
+    const W = L.x1 - L.x0, D = L.z1 - L.z0, R = Math.min(W, D);
+    const lake = { x: L.x0 + W * 0.66, z: L.z0 + D * 0.6, r: R * 0.17 }, pond = { x: L.x0 + W * 0.2, z: L.z0 + D * 0.22, r: R * 0.06 };
+    const meadow = { x: L.x0 + W * 0.27, z: L.z0 + D * 0.7, r: R * 0.17 };
     for (const w of [lake, pond]) {
       m.prism(w.x, CURB, w.z, w.r, 0.05, 28, '#3f86b8');
       this.colliders.addCircle(w.x, w.z, w.r - 1, 2);
       this.mapCircles.push([w.x, w.z, w.r, '#3f86b8']);
     }
     // Loop drive and a cross path.
-    const path = '#c8b98f', i = 28, pw = 2.5;
+    const path = '#c8b98f', i = 12, pw = 2.5;
     const strips = [
       [L.x0 + i, L.z0 + i, L.x1 - i, L.z0 + i + pw], [L.x0 + i, L.z1 - i - pw, L.x1 - i, L.z1 - i],
       [L.x0 + i, L.z0 + i, L.x0 + i + pw, L.z1 - i], [L.x1 - i - pw, L.z0 + i, L.x1 - i, L.z1 - i],
@@ -499,7 +538,7 @@ export class World {
       this.rect(a, b2, c, d, path);
     }
     const onPath = (x, z) => strips.some(([a, b2, c, d]) => x > a - 2 && x < c + 2 && z > b2 - 2 && z < d + 2);
-    for (let k = 0; k < 900; k++) {
+    for (let k = 0; k < 160; k++) {
       const x = rng.range(L.x0 + 2, L.x1 - 2), z = rng.range(L.z0 + 2, L.z1 - 2);
       if (onPath(x, z) || [lake, pond].some((w) => Math.hypot(x - w.x, z - w.z) < w.r + 5)) continue;
       if (Math.hypot(x - meadow.x, z - meadow.z) < meadow.r) continue;
@@ -510,9 +549,9 @@ export class World {
       const a = (k / 12) * Math.PI * 2, bx = lake.x + Math.cos(a) * (lake.r + 4), bz = lake.z + Math.sin(a) * (lake.r + 4);
       b.box(bx, CURB, bz, 2, 0.5, 0.6, '#7a5233');
     }
-    this.parks.prospect = { x: lake.x - lake.r - 8, z: lake.z, lake };
+    this.parks.prospect = { x: lake.x - lake.r - 5, z: lake.z, lake };
     this.parks.watch = { x: meadow.x, z: meadow.z };
-    for (const [x, z] of [[L.x0 + 40, L.z1 - 40], [L.x1 - 40, L.z0 + 60], [L.x1 - 50, L.z1 - 60], [lake.x + 90, lake.z - 80]]) {
+    for (const [x, z] of [[L.x0 + 20, L.z1 - 18], [L.x1 - 20, L.z0 + 20], [L.x1 - 18, L.z1 - 16]]) {
       this.backyards.push({ x, z, w: 30 });
     }
   }
@@ -556,7 +595,7 @@ export class World {
           const a = x + e, b = roadX(i + 1) - e;
           for (let t = a; t < b - 3; t += 6) m.quadH(t, z - 0.1, t + 3, z + 0.1, Y, yel);
         }
-        if (Math.abs(i - MAIN_I) <= 0 || (i >= 3 && i <= 6 && j <= 3)) {
+        if (i === MAIN_I || j <= 1) {
           const o = ROAD / 2 + 1.5;
           for (let s = -ROAD / 2 + 1; s < ROAD / 2 - 0.5; s += 1.4) {
             m.quadH(x + s, z - o - 1.2, x + s + 0.7, z - o + 1.2, Y, wht);

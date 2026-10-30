@@ -54,7 +54,7 @@ export class Stash {
     item.mesh.scale.setScalar(1.5);
     if (n < MAX_SHOWN) this.place(item.mesh, n);
     g.sfx.play('drop');
-    g.ui.toast(`Stashed the ${item.name} (${n + 1} treasures)`, '#e8c890');
+    g.ui.toast(`Stashed the ${item.name} at base camp (${n + 1} treasures)`, '#e8c890');
     if ((n + 1) % 5 === 0) {
       const xp = 20 + (n + 1) * 2;
       g.rpg.addXP(xp);

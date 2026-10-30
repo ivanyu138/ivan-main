@@ -44,7 +44,7 @@ const clawTex = canvasTex(32, 32, (x) => {
     x.stroke();
   }
 });
-import { groundHeight, HALF } from './world.js';
+import { HALF } from './world.js';
 import { angDiff, clamp } from './util.js';
 
 export class Player {
@@ -102,10 +102,10 @@ export class Player {
 
   // Pick up the nearest small item in reach, carrying it crosswise in the mouth.
   grab() {
-    const g = this.game, w = this.mouthWorld();
-    const it = g.litter.nearest(w.x, w.z, 0.9);
+    const g = this.game, w = this.mouthWorld(), host = g.carryHost();
+    const it = host.nearest(w.x, w.z, 0.9, this.pos.y);
     if (!it) return false;
-    g.litter.take(it);
+    host.take(it);
     this.carry = it;
     this.attachCarry();
     g.sfx.play('pick');
@@ -126,7 +126,7 @@ export class Player {
     if (!it) return null;
     this.cat.rig.remove(it.mesh);
     this.carry = null;
-    this.game.litter.forget(it);
+    this.game.carryHost().forget(it);
     return it;
   }
 
@@ -135,7 +135,7 @@ export class Player {
     if (!it) return;
     const w = this.mouthWorld();
     this.cat.rig.remove(it.mesh);
-    this.game.litter.putDown(it, w.x, w.y, w.z, this.facing);
+    this.game.carryHost().putDown(it, w.x, w.y, w.z, this.facing);
     this.carry = null;
     this.game.sfx.play('drop');
   }
@@ -157,8 +157,11 @@ export class Player {
     this.hissT = 1;
     g.sfx.play('hiss');
     this.say('hiss');
-    g.peds.hissAt(this.pos.x, this.pos.z, 9);
-    g.animals.hissAt(this.pos, 8);
+    if (g.inside) g.inside.hissAt(this.pos, 5);
+    else {
+      g.peds.hissAt(this.pos.x, this.pos.z, 9);
+      g.animals.hissAt(this.pos, 8);
+    }
     g.npcs.hissAt(this.pos, 4.5);
   }
 
@@ -168,6 +171,7 @@ export class Player {
     this.cat = makeCat(id);
     this.root.add(this.cat.group);
     if (this.carry) this.attachCarry();
+    if (this.game.baseCamp) this.game.baseCamp.refresh();
   }
 
   canAct() {
@@ -220,22 +224,27 @@ export class Player {
       this.vy = 6.8;
       this.onGround = false;
     }
+    // Floors and walls come from wherever the cat is: the street, or an interior with stairs.
+    const env = g.env();
     this.vy -= 20 * dt;
     this.pos.y += this.vy * dt;
-    const gh = groundHeight(this.pos.x, this.pos.z);
+    const gh = env.ground(this.pos.x, this.pos.z, this.pos.y);
     if (this.pos.y <= gh) {
       this.pos.y = gh;
       this.vy = 0;
       this.onGround = true;
-    }
+    } else if (this.pos.y - gh > 0.05) this.onGround = false;
 
-    g.world.colliders.resolveCircle(this.pos, this.radius, this.pos.y - gh + 0.3);
-    g.traffic.pushOut(this.pos, this.radius);
-    g.peds.pushOut(this.pos, this.radius);
-    g.npcs.pushOut(this.pos, this.radius);
-    const lim = HALF + 6;
-    this.pos.x = clamp(this.pos.x, -lim, lim);
-    this.pos.z = clamp(this.pos.z, -lim, lim);
+    env.colliders.resolveCircle(this.pos, this.radius, env.abs ? this.pos.y + 0.3 : this.pos.y - gh + 0.3);
+    if (g.inside) g.inside.pushOut(this.pos, this.radius);
+    else {
+      g.traffic.pushOut(this.pos, this.radius);
+      g.peds.pushOut(this.pos, this.radius);
+      g.npcs.pushOut(this.pos, this.radius);
+      const lim = HALF + 6;
+      this.pos.x = clamp(this.pos.x, -lim, lim);
+      this.pos.z = clamp(this.pos.z, -lim, lim);
+    }
 
     if (this.canAct() && inp.pressed('KeyE') && this.hissCd <= 0) this.hiss();
     this.hissT = Math.max(0, this.hissT - dt * 1.1);
@@ -253,7 +262,9 @@ export class Player {
       this.claw.visible = true;
       const fx = Math.sin(this.facing), fz = Math.cos(this.facing);
       const dmg = 7 + rpg.skills.strength * 3;
-      const hit = g.npcs.hitInFront(this.pos, fx, fz, dmg) || g.animals.hitInFront(this.pos, fx, fz) || g.peds.hitInFront(this.pos, fx, fz, dmg);
+      const hit = g.inside
+        ? g.inside.hitInFront(this.pos, fx, fz)
+        : g.npcs.hitInFront(this.pos, fx, fz, dmg) || g.animals.hitInFront(this.pos, fx, fz) || g.peds.hitInFront(this.pos, fx, fz, dmg);
       if (hit) g.sfx.play('punch');
     }
 

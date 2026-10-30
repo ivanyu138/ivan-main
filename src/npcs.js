@@ -14,7 +14,7 @@ export const NPC_DEFS = {
     name: 'Mrs. Hendricks',
     look: { skin: '#f3d7c0', hair: '#d8d8d8', shirt: '#9ab88d', pants: '#5a4a3a' },
     at: () => {
-      const L = lotRect(6, 5);
+      const L = lotRect(2, 1);
       return { x: L.x0 + 60, z: L.z0 - 1.2 };
     },
     wants: 'fish',
@@ -42,7 +42,7 @@ export const NPC_DEFS = {
     name: 'Sock Sal',
     look: { skin: '#e0ac85', hair: '#9a9a9a', shirt: '#4ac9c0', pants: '#8a4ac9', shoes: '#e04848' },
     at: () => {
-      const L = lotRect(4, 8);
+      const L = lotRect(0, 3);
       return { x: L.x1 + 2.2, z: (L.z0 + L.z1) / 2 };
     },
     facing: Math.PI / 2,

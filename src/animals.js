@@ -126,13 +126,13 @@ export class Animals {
       game.scene.add(model.group);
       this.list.push({ kind, model, name, pos: model.group.position, facing: 0, state: 'wander', timer: 0, phase: 0, speed: 0, tx: 0, tz: 0, cd: 0, swipe: 0, y: 0, vy: 0, ...extra });
     };
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {
       const coat = STRAY_COATS[i % STRAY_COATS.length];
       add('cat', makeCat(coat, true), coat.name, { meow: coat.meow });
     }
-    for (let i = 0; i < 4; i++) add('dog', makeDog(DOG_COATS[i % DOG_COATS.length]), 'dog');
-    for (let i = 0; i < 6; i++) add('rat', makeRat(), 'rat');
-    for (let i = 0; i < 12; i++) add('pigeon', makePigeon(), 'pigeon', { flock: Math.floor(i / 4) });
+    for (let i = 0; i < 3; i++) add('dog', makeDog(DOG_COATS[i % DOG_COATS.length]), 'dog');
+    for (let i = 0; i < 4; i++) add('rat', makeRat(), 'rat');
+    for (let i = 0; i < 8; i++) add('pigeon', makePigeon(), 'pigeon', { flock: Math.floor(i / 4) });
     this.lastToast = -99;
     for (const a of this.list) this.respawn(a, 15, 120);
   }

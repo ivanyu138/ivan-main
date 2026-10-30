@@ -13,7 +13,8 @@ export const CONTROLS = [
     ['E', 'Hiss'],
     ['Q', 'Meow'],
     ['G', 'Pick up / drop item'],
-    ['T', 'Talk / interact / shop'],
+    ['T', 'Talk / interact / shop / enter'],
+    ['Hold T', 'Crack a safe'],
     ['F', 'Get in a car'],
   ]],
   ['Driving', [

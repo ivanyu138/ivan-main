@@ -79,9 +79,92 @@ export const KINDS = {
     name: 'piece of cardboard',
     build: (b) => b.rbox([0, 0.008, 0], [0.14, 0.016, 0.18], 0.005, '#b08a5a'),
   },
+
+  // Things found inside the saloon.
+  mug: {
+    name: 'tin mug',
+    build: (b) => {
+      b.cylinder([0, 0.05, 0], 0.04, 0.036, 0.1, '#a8aeb6', [0, 0, 0], 12);
+      b.add(new THREE.TorusGeometry(0.028, 0.008, 6, 10), '#a8aeb6', [0.045, 0.05, 0]);
+    },
+  },
+  horseshoe: {
+    name: 'horseshoe',
+    build: (b) => b.add(new THREE.TorusGeometry(0.055, 0.012, 6, 14, Math.PI * 1.45), '#6a6a72', [0, 0.012, 0], [Math.PI / 2, 0, Math.PI * 0.27]),
+  },
+  hat: {
+    name: 'cowboy hat',
+    build: (b) => {
+      b.cylinder([0, 0.008, 0], 0.13, 0.13, 0.014, '#8a5a32', [0, 0, 0], 18);
+      b.sphere([0, 0.05, 0], [0.068, 0.05, 0.085], '#8a5a32', 12);
+      b.cylinder([0, 0.025, 0], 0.07, 0.072, 0.018, '#3a2a1a', [0, 0, 0], 14);
+    },
+  },
+  cards: {
+    name: 'deck of cards',
+    build: (b) => b.rbox([0, 0.012, 0], [0.07, 0.024, 0.1], 0.004, (x, y, z, nx, ny) => (ny > 0.5 ? (Math.abs(x) < 0.012 && Math.abs(z) < 0.018 ? '#c02a2a' : '#f4f0e6') : '#c02a2a')),
+  },
+  pokerchips: {
+    name: 'stack of poker chips',
+    build: (b) => {
+      b.cylinder([0, 0.012, 0], 0.022, 0.022, 0.024, '#c02a2a', [0, 0, 0], 12);
+      b.cylinder([0.05, 0.017, 0.01], 0.022, 0.022, 0.034, '#2a5ac0', [0, 0, 0], 12);
+      b.cylinder([0.02, 0.008, 0.05], 0.022, 0.022, 0.016, '#f0f0f0', [0, 0, 0], 12);
+    },
+  },
+  harmonica: {
+    name: 'harmonica',
+    build: (b) => b.rbox([0, 0.014, 0], [0.03, 0.028, 0.11], 0.006, (x) => (x > 0.012 ? '#3a3a3a' : '#c8ccd2')),
+  },
+  badge: {
+    name: "sheriff's badge",
+    build: (b) => {
+      b.cylinder([0, 0.006, 0], 0.03, 0.03, 0.012, '#e0b830', [0, 0, 0], 10);
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2;
+        b.cone([Math.cos(a) * 0.042, 0.006, -Math.sin(a) * 0.042], 0.012, 0.03, '#e0b830', [0, a, -Math.PI / 2], 6, [1, 1, 0.5]);
+      }
+    },
+  },
+  bottle: {
+    name: 'old bottle',
+    build: (b) => {
+      b.cylinder([0, 0.03, 0], 0.03, 0.03, 0.13, '#2a6a3a', [Math.PI / 2, 0, 0], 10);
+      b.cylinder([0, 0.03, 0.09], 0.012, 0.016, 0.05, '#2a6a3a', [Math.PI / 2, 0, 0], 8);
+      b.cylinder([0, 0.03, 0.12], 0.011, 0.011, 0.015, '#b08a5a', [Math.PI / 2, 0, 0], 8);
+    },
+  },
+  candle: {
+    name: 'candle',
+    build: (b) => {
+      b.cylinder([0, 0.04, 0], 0.018, 0.02, 0.08, '#f2ead0', [0, 0, 0], 10);
+      b.cone([0, 0.095, 0], 0.008, 0.025, '#ffc84a', [0, 0, 0], 6);
+    },
+  },
+  pouch: {
+    name: 'coin pouch',
+    build: (b) => {
+      b.sphere([0, 0.042, 0], [0.05, 0.042, 0.05], '#7a5233', 12);
+      b.cylinder([0, 0.088, 0], 0.016, 0.022, 0.02, '#5a3a20', [0, 0, 0], 8);
+      b.cylinder([0.06, 0.004, 0.02], 0.016, 0.016, 0.006, '#e0b830', [0, 0, 0], 10);
+    },
+  },
+  ledger: {
+    name: 'guest ledger',
+    build: (b) => b.rbox([0, 0.016, 0], [0.11, 0.032, 0.15], 0.006, (x, y, z, nx, ny) => (Math.abs(ny) > 0.6 || x < -0.045 ? '#6a2e1e' : '#f0e8d0')),
+  },
+  rope: {
+    name: 'coil of rope',
+    build: (b) => {
+      b.add(new THREE.TorusGeometry(0.055, 0.014, 6, 16), '#c8a878', [0, 0.014, 0], [Math.PI / 2, 0, 0]);
+      b.add(new THREE.TorusGeometry(0.04, 0.014, 6, 14), '#b8986a', [0, 0.036, 0], [Math.PI / 2, 0, 0]);
+    },
+  },
 };
 // Fish and socks turn up more often, since people want them.
-const KIND_IDS = [...Object.keys(KINDS), 'fish', 'fish', 'sock', 'sock'];
+// What turns up on the street (saloon items only appear inside the saloon).
+const STREET = ['wrap', 'chips', 'fish', 'sock', 'paper', 'mouse', 'crust', 'cap', 'leaf', 'feather', 'donut', 'cardboard'];
+const KIND_IDS = [...STREET, 'fish', 'fish', 'sock', 'sock'];
 // Drawn a bit larger than life so they're easy to spot from the chase camera.
 const SIZE = 1.5;
 const geoCache = {};
@@ -147,6 +230,7 @@ export class Litter {
   take(it) {
     it.carried = true;
     this.game.scene.remove(it.mesh);
+    this.forget(it);
   }
 
   // Stop tracking an item (it was given away or stashed).
@@ -163,6 +247,7 @@ export class Litter {
     it.mesh.scale.setScalar(SIZE);
     it.vy = 0;
     this.game.scene.add(it.mesh);
+    if (!this.items.includes(it)) this.items.push(it);
   }
 
   update(dt) {
