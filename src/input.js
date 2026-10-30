@@ -35,8 +35,9 @@ export class Input {
       const k = e.deltaMode === 1 ? 16 : 1;
       if (e.ctrlKey) this.zoom += e.deltaY * k;
       else {
-        this.mouseDX += e.deltaX * k * 1.5;
-        this.mouseDY += e.deltaY * k * 1.5;
+        // Inverted so the view follows the fingers, like dragging the scene.
+        this.mouseDX -= e.deltaX * k * 1.5;
+        this.mouseDY -= e.deltaY * k * 1.5;
       }
     }, { passive: false });
     // Safari's own pinch gesture events, so pinching zooms the camera instead of the page.
