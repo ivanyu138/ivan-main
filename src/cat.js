@@ -148,7 +148,9 @@ export function makeCat(id) {
   const group = new THREE.Group();
   group.add(rig);
   for (const m of [body, tail, ...legs]) m.castShadow = true;
-  return { group, rig, body, tail, legs, t: 0 };
+  // Where a carried item sits: just in front of the chin.
+  const mouth = { y: hcy - S.hh * 0.34, z: padZ + 0.02 };
+  return { group, rig, body, tail, legs, mouth, t: 0 };
 }
 
 // phase: gait cycle, amt: 0..1 stride, swipe: 0..1 paw swipe, sit: 0..1 sitting blend,

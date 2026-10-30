@@ -10,6 +10,7 @@ import { Traffic } from './vehicles.js';
 import { Pedestrians } from './peds.js';
 import { NPCs } from './npcs.js';
 import { Pickups } from './pickups.js';
+import { Litter } from './litter.js';
 import { Quests, QUESTS } from './quests.js';
 import { Sfx } from './audio.js';
 import { CatSelect } from './select.js';
@@ -56,6 +57,7 @@ class Game {
     this.peds = new Pedestrians(this);
     this.npcs = new NPCs(this);
     this.pickups = new Pickups(this);
+    this.litter = new Litter(this);
     this.quests = new Quests(this);
     this.select = new CatSelect();
 
@@ -426,6 +428,16 @@ class Game {
         ui.openPanel('shop', poi.shop);
       };
     }
+    // Carrying things in the cat's mouth.
+    if (p.carry) text += (text ? '\n' : '') + `[G] Drop the ${p.carry.name}`;
+    else {
+      const w = p.mouthWorld(), near = this.litter.nearest(w.x, w.z, 0.9);
+      if (near) text += (text ? '\n' : '') + `[G] Pick up the ${near.name}`;
+    }
+    if (inp.pressed('KeyG')) {
+      if (p.carry) p.drop();
+      else p.grab();
+    }
     const car = this.traffic.nearest(p.pos, 1.6);
     if (car) text += (text ? '\n' : '') + `[F] ${car.mode === 'ai' ? 'Carjack' : 'Get in'} ${car.owned ? 'your ' : ''}${car.spec.name}`;
     ui.prompt(text);
@@ -445,6 +457,7 @@ class Game {
     this.peds.update(dt);
     this.npcs.update(dt);
     this.pickups.update(dt);
+    this.litter.update(dt);
     this.quests.update(dt);
     this.rpg.update(dt);
     this.sky.update(dt, this.player.pos);

@@ -95,8 +95,44 @@ export class Player {
     this.bubbleT = 1.3;
   }
 
+  mouthWorld() {
+    const m = this.cat.mouth;
+    return { x: this.pos.x + Math.sin(this.facing) * m.z, y: this.pos.y + m.y, z: this.pos.z + Math.cos(this.facing) * m.z };
+  }
+
+  // Pick up the nearest small item in reach, carrying it crosswise in the mouth.
+  grab() {
+    const g = this.game, w = this.mouthWorld();
+    const it = g.litter.nearest(w.x, w.z, 0.9);
+    if (!it) return false;
+    g.litter.take(it);
+    this.carry = it;
+    this.attachCarry();
+    g.sfx.play('pick');
+    return true;
+  }
+
+  attachCarry() {
+    const m = this.cat.mouth, mesh = this.carry.mesh;
+    mesh.position.set(0, m.y - 0.03, m.z + 0.02);
+    mesh.rotation.set(0.15, Math.PI / 2, 0);
+    mesh.scale.setScalar(1.15);
+    this.cat.rig.add(mesh);
+  }
+
+  drop() {
+    const it = this.carry;
+    if (!it) return;
+    const w = this.mouthWorld();
+    this.cat.rig.remove(it.mesh);
+    this.game.litter.putDown(it, w.x, w.y, w.z, this.facing);
+    this.carry = null;
+    this.game.sfx.play('drop');
+  }
+
   meow() {
     const g = this.game;
+    this.drop();
     this.meowCd = 0.9;
     this.meowT = 1;
     g.sfx.play('meow', CATS[this.catId].meow);
@@ -106,6 +142,7 @@ export class Player {
 
   hiss() {
     const g = this.game;
+    this.drop();
     this.hissCd = 2.5;
     this.hissT = 1;
     g.sfx.play('hiss');
@@ -119,6 +156,7 @@ export class Player {
     this.catId = id;
     this.cat = makeCat(id);
     this.root.add(this.cat.group);
+    if (this.carry) this.attachCarry();
   }
 
   canAct() {
