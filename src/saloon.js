@@ -482,6 +482,21 @@ export class Saloon {
     }
   }
 
+  // Sprayed with the water gun: the owner flees her suite, the sleeper wakes, everyone else jumps.
+  soak(p) {
+    const g = this.game, first = p.name.split(' ')[0];
+    if (p.id === 'sleeper') g.animals.toast('"Bwah! Wha-? It\'s raining indoors!"', '#9adcff');
+    else if (p.owner && p.state !== 'out') {
+      p.state = 'out';
+      p.timer = 40;
+      this.safe.progress = 0;
+      g.animals.toast('"My dress! You soggy menace!" Miss Lottie storms downstairs.', '#9adcff');
+    } else {
+      p.hop = 1;
+      g.animals.toast(`${first} sputters, dripping wet!`, '#9adcff');
+    }
+  }
+
   hitInFront(pos, fx, fz) {
     for (const p of this.people) {
       if (Math.abs(p.pos.y - pos.y) > 1.5) continue;

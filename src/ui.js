@@ -1,4 +1,4 @@
-import { MAP_EXT, MAP_PX, HALF } from './world.js';
+import { MAP_EXT, MAP_PX, HALF, MAIN_I, PARK_RECT, roadX, roadZ } from './world.js';
 import { ITEMS, SHOPS, SKILLS, SKILL_MAX } from './rpg.js';
 import { QUESTS } from './quests.js';
 import { NPC_DEFS } from './npcs.js';
@@ -39,7 +39,7 @@ export class UI {
     this.game = game;
     this.el = {
       lvl: $('lvl'), money: $('money'), clock: $('clock'),
-      hp: document.querySelector('.bar.hp .fill'), xp: document.querySelector('.bar.xp .fill'),
+      hp: document.querySelector('.bar.hp .fill'), xp: document.querySelector('.bar.xp .fill'), water: document.querySelector('.bar.water'),
       objective: $('objective'), toasts: $('toasts'), prompt: $('prompt'), hotbar: $('hotbar'), speedo: $('speedo'),
       dialog: $('dialog'), panel: $('panel'), dead: $('dead'),
     };
@@ -91,6 +91,9 @@ export class UI {
     this.set('clock', this.el.clock, g.sky.clock);
     this.el.hp.style.width = `${(100 * r.hp) / r.maxHp}%`;
     this.el.xp.style.width = `${(100 * r.xp) / r.xpNext}%`;
+    const gun = g.waterGun;
+    this.el.water.style.display = gun && gun.equipped ? '' : 'none';
+    if (gun && gun.equipped) this.el.water.firstChild.style.width = `${gun.tank}%`;
 
     const o = g.quests.objective();
     let html = '';
@@ -410,7 +413,7 @@ export class UI {
       x.fillRect(mx - 5, my - 5, 10, 10);
       x.fillStyle = poi.color;
       x.fillRect(mx - 4, my - 4, 8, 8);
-      const west = poi.door.x < 0;
+      const west = poi.door.x < roadX(MAIN_I);
       x.textAlign = west ? 'right' : 'left';
       label(poi.name, mx + (west ? -9 : 9), my);
     }
@@ -422,15 +425,15 @@ export class UI {
       label('BASE CAMP', hx - 9, hy + 12, 11, '#e8c890');
       x.textAlign = 'center';
     }
-    const park = g.world.parks.prospect.lake;
-    label('MAPLE PARK', to(park.x, park.z - 130)[0], to(park.x, park.z - 130)[1], 12, '#cfe8b0');
+    const [kx, ky] = to((PARK_RECT.x0 + PARK_RECT.x1) / 2, PARK_RECT.z0 + 8);
+    label('MAPLE PARK', kx, ky, 12, '#cfe8b0');
     x.save();
     const [rx, ry] = to(-HALF - 22, 0);
     x.translate(rx, ry);
     x.rotate(-Math.PI / 2);
     label('EAST RIVER', 0, 0, 12, '#bfe0ff');
     x.restore();
-    const [sx, sy] = to(0, HALF - 120);
+    const [sx, sy] = to(roadX(MAIN_I), roadZ(5) + 20);
     x.save();
     x.translate(sx, sy);
     x.rotate(-Math.PI / 2);

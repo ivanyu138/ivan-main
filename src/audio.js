@@ -126,6 +126,9 @@ export class Sfx {
       case 'flap': for (let i = 0; i < 4; i++) this.hiss(0.04, i * 0.06); break;
       case 'yowl': this.meow((arg || 600) * 0.7); this.hiss(0.5, 0.15); break;
       case 'ragtime': [523, 659, 784, 659, 880, 784, 659, 523, 587, 698, 880, 698, 784, 659, 523, 392].forEach((f, i) => { this.tone(f, 0.13, 'triangle', 0.16, 0, i * 0.14); if (i % 2 === 0) this.tone(f / 4, 0.12, 'triangle', 0.12, 0, i * 0.14); }); break;
+      case 'spray': this.noise(0.16, 0.1, 5000); break;
+      case 'splash': this.noise(0.12, 0.16, 1600); this.tone(900, 0.06, 'sine', 0.06, -500); break;
+      case 'pump': this.noise(0.07, 0.25, 900); this.tone(300, 0.08, 'triangle', 0.15, 200, 0.08); break;
       case 'pick': this.tone(520, 0.06, 'triangle', 0.18, 260); break;
       case 'drop': this.tone(420, 0.07, 'triangle', 0.15, -180); break;
       case 'buy': this.tone(1200, 0.05, 'square', 0.12); this.tone(1600, 0.1, 'square', 0.12, 0, 0.05); break;

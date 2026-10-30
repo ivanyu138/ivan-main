@@ -13,6 +13,8 @@ export const CONTROLS = [
     ['E', 'Hiss'],
     ['Q', 'Meow'],
     ['G', 'Pick up / drop item'],
+    ['V', 'Water gun on / off'],
+    ['Hold R / Click', 'Spray water gun'],
     ['T at camp box', 'Upgrade base camp'],
     ['T', 'Talk / interact / shop / enter'],
     ['Hold T', 'Crack a safe'],

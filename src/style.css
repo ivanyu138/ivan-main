@@ -17,6 +17,7 @@ body { font-family: "Courier New", ui-monospace, monospace; color: #f4f1e8; user
 .bar span { position: absolute; left: 4px; top: -2px; font-size: 12px; font-weight: bold; }
 .bar.hp .fill { background: #d8463c; }
 .bar.xp .fill { background: #4fa3e8; }
+.bar.water .fill { background: #5ec8ff; }
 
 #minimap {
   position: absolute; left: 14px; bottom: 14px; width: 180px; height: 180px;

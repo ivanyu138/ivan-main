@@ -7,19 +7,19 @@ import { Colliders } from './collision.js';
 // east-west every 95m, so blocks are long rectangles lined with rowhouses.
 // Avenue 5 (x = 0) is Main Street. The river is off the west edge.
 // 2280m x 2280m ~= 2.0 square miles.
-export const HALF = 342;
-export const PX = 228;
-export const PZ = (2 * 342) / 7; // seven blocks fill the same width as three long blocks
-export const ROAD = 14;
-export const WALK = 3;
+export const HALF = 240;
+export const PX = 160;
+export const PZ = (2 * 240) / 7; // seven blocks fill the same width as three long blocks
+export const ROAD = 9;
+export const WALK = 2;
 export const NAX = 4; // avenues (x = const)
 export const NSZ = 8; // streets (z = const)
 export const NBX = 3;
 export const NBZ = 7;
 export const CURB = 0.15;
-export const LANE = 3.4;
+export const LANE = 2.2;
 export const MAIN_I = 1;
-export const MAP_PX = 1.5; // minimap pixels per meter
+export const MAP_PX = 2; // minimap pixels per meter
 export const MAP_EXT = HALF + 60; // minimap covers -MAP_EXT..MAP_EXT
 
 export const roadX = (i) => -HALF + i * PX;
@@ -273,7 +273,7 @@ export class World {
     const m = this.markB;
     for (let x = ax0 + 14; x < ax1; x += rng.range(14, 22)) {
       m.box(x, CURB, mz, 0.08, 1.3, bz1 - bz0, '#7a5a3a');
-      if (rng.chance(0.5)) this.addTree(x + rng.range(-8, 8), mz + rng.range(-12, 12), rng);
+      if (rng.chance(0.5)) this.addTree(x + rng.range(-8, 8), mz + rng.range(-1, 1) * Math.max(0, (bz1 - bz0) / 2 - 2), rng);
     }
     for (let k = 0; k < 3; k++) this.backyards.push({ x: ax0 + ((k + 0.5) * (ax1 - ax0)) / 3, z: mz, w: 26 });
     this.streetTrees(blockRect(bi, bj), rng);
@@ -397,8 +397,8 @@ export class World {
     if (rng.chance(0.25)) {
       // A couple of sidewalk cafe tables.
       for (const dz of [-1.8, 1.8]) {
-        b.box(fx + s * 1.6, CURB, zc + dz, 0.7, 0.75, 0.7, '#3a3a3a');
-        this.colliders.addBox(fx + s * 1.6 - 0.35, zc + dz - 0.35, fx + s * 1.6 + 0.35, zc + dz + 0.35, 0.9);
+        b.box(fx + s * 1.1, CURB, zc + dz, 0.6, 0.75, 0.6, '#3a3a3a');
+        this.colliders.addBox(fx + s * 1.1 - 0.3, zc + dz - 0.3, fx + s * 1.1 + 0.3, zc + dz + 0.3, 0.9);
       }
     }
   }
@@ -422,11 +422,11 @@ export class World {
     b.box(fx - s * 0.1, CURB + 11.5, zc, 0.9, 0.4, wz + 1.6, trim);
     for (let i = 0; i < 6; i++) b.box(fx + s * 0.02, CURB + 0.2, zc - wz / 2 + 1 + i * 0.12, 0.04, 11, 0.04, trim);
     // Balcony over the sidewalk, held up by posts.
-    b.box(fx + s * 1.5, CURB + 3.8, zc, 3, 0.25, wz, trim);
-    b.box(fx + s * 2.9, CURB + 4.05, zc, 0.08, 0.9, wz, '#6a4426');
-    b.box(fx + s * 2.9, CURB + 4.9, zc, 0.16, 0.1, wz + 0.2, trim);
+    b.box(fx + s * 1, CURB + 3.8, zc, 2, 0.25, wz, trim);
+    b.box(fx + s * 1.9, CURB + 4.05, zc, 0.08, 0.9, wz, '#6a4426');
+    b.box(fx + s * 1.9, CURB + 4.9, zc, 0.16, 0.1, wz + 0.2, trim);
     for (const dz of [-13, -8.5, -4, 4, 8.5, 13]) {
-      const px = fx + s * 2.8, pz = zc + dz;
+      const px = fx + s * 1.8, pz = zc + dz;
       b.box(px, CURB, pz, 0.22, 3.8, 0.22, trim);
       this.colliders.addBox(px - 0.11, pz - 0.11, px + 0.11, pz + 0.11, 4);
     }
@@ -437,7 +437,7 @@ export class World {
     sign.position.set(fx + s * 0.12, CURB + 9.4, zc);
     sign.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2;
     this.scene.add(sign);
-    const door = { x: fx + s * 2.2, z: zc };
+    const door = { x: fx + s * 1.3, z: zc };
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.9, 1.3, 16),
       new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.7, depthWrite: false }),
@@ -460,7 +460,7 @@ export class World {
     sign.position.set(fx + s * 0.1, CURB + h - 2.2, zc);
     sign.rotation.y = s > 0 ? Math.PI / 2 : -Math.PI / 2;
     this.scene.add(sign);
-    const door = { x: fx + s * 2.5, z: zc };
+    const door = { x: fx + s * 1.3, z: zc };
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.9, 1.3, 16),
       new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: 0.7, depthWrite: false }),
@@ -475,8 +475,8 @@ export class World {
   }
 
   genPlaza(L, rng) {
-    const zc = (L.z0 + L.z1) / 2, fx = L.x0 + 100, poi = POI_DEFS.find((p) => p.id === 'townhall');
-    this.genPOI(poi, fx, zc, -1, 50, 30, 13, false);
+    const zc = (L.z0 + L.z1) / 2, fx = L.x0 + 64, poi = POI_DEFS.find((p) => p.id === 'townhall');
+    this.genPOI(poi, fx, zc, -1, 40, 30, 13, false);
     const b = this.chunkB(fx, zc);
     for (let i = 0; i < 6; i++) {
       const z = zc - 15 + i * 6;
@@ -488,7 +488,7 @@ export class World {
     b.prism(fx + 15, CURB + 16, zc, 5.5, 3.5, 12, '#6f9a8a', '#5f8a7a');
     b.box(fx + 15, CURB + 19.5, zc, 0.3, 4, 0.3, '#444');
     // Plaza with a fountain between Main Street and the hall.
-    const px = L.x0 + 48, m = this.markB;
+    const px = L.x0 + 30, m = this.markB;
     m.quadH(px, zc - 3, fx, zc + 3, CURB + 0.01, '#bdb6a6');
     m.quadH(px - 3, L.z0, px + 3, L.z1, CURB + 0.01, '#bdb6a6');
     m.quadH(L.x0, zc - 3, px, zc + 3, CURB + 0.01, '#bdb6a6');
@@ -500,21 +500,21 @@ export class World {
     this.mapCircles.push([px, zc, 6, '#4f9fd0']);
     for (let i = 0; i < 14; i++) {
       const a = (i / 14) * Math.PI * 2;
-      this.addTree(px + Math.cos(a) * 34, zc + Math.sin(a) * 28, rng, 1.1);
+      this.addTree(px + Math.cos(a) * 21, zc + Math.sin(a) * 18, rng, 1.1);
     }
-    for (const x of [fx + 52, fx + 88]) this.addBuilding(x, zc, 30, rng.range(40, 70), 50, rng.pick(TOWERS), WIN_TOWER);
+    this.addBuilding(fx + 52, zc, 30, rng.range(40, 70), 40, rng.pick(TOWERS), WIN_TOWER);
     this.plaza = { x: px, z: zc, hall: fx };
   }
 
   genDowntown(L, rng, bi, bj) {
-    const n = 4, pw = (L.x1 - L.x0) / n;
+    const n = 3, pw = (L.x1 - L.x0) / n, maxD = L.z1 - L.z0 - 8;
     for (let k = 0; k < n; k++) {
       const px = L.x0 + (k + 0.5) * pw, pz = (L.z0 + L.z1) / 2;
       if (rng.chance(0.1)) {
         for (let i = 0; i < 4; i++) this.addTree(px + rng.range(-18, 18), pz + rng.range(-25, 25), rng);
         continue;
       }
-      const w = rng.range(34, pw - 6), d = rng.range(44, 66), h = rng.range(30, 85) * (bj === 0 ? 1.3 : 1);
+      const w = rng.range(30, pw - 6), d = Math.min(maxD, rng.range(40, 60)), h = rng.range(30, 85) * (bj === 0 ? 1.3 : 1);
       const c = rng.pick(TOWERS);
       this.addBuilding(px, pz, w, h, d, c, WIN_TOWER);
       const b = this.chunkB(px, pz);
@@ -599,10 +599,10 @@ export class World {
   }
 
   genIndustrial(L, rng) {
-    const n = 4, pw = (L.x1 - L.x0) / n;
+    const n = 3, pw = (L.x1 - L.x0) / n;
     for (let k = 0; k < n; k++) {
       const px = L.x0 + (k + 0.5) * pw, pz = (L.z0 + L.z1) / 2;
-      const w = rng.range(36, pw - 6), d = rng.range(44, 64), h = rng.range(8, 13);
+      const w = rng.range(30, pw - 6), d = Math.min(L.z1 - L.z0 - 8, rng.range(40, 60)), h = rng.range(8, 13);
       const c = rng.pick(['#8d9196', '#9a7f66', '#6f7f8f', '#8a8470', '#8a3f2f']);
       this.addBuilding(px, pz, w, h, d, c, WIN_WARE);
       const b = this.chunkB(px, pz);

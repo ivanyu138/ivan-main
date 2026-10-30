@@ -182,7 +182,7 @@ export class Car {
 }
 
 export class Traffic {
-  constructor(game, count = 16) {
+  constructor(game, count = 12) {
     this.game = game;
     this.rng = new RNG(99);
     this.cars = [];

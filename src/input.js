@@ -16,10 +16,16 @@ export class Input {
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
     el.addEventListener('mousedown', (e) => {
-      if (e.button === 0) this.hits.add('Mouse0');
+      if (e.button === 0) {
+        this.hits.add('Mouse0');
+        this.keys.add('Mouse0');
+      }
       this.dragging = true;
     });
-    addEventListener('mouseup', () => (this.dragging = false));
+    addEventListener('mouseup', (e) => {
+      this.dragging = false;
+      if (e.button === 0) this.keys.delete('Mouse0');
+    });
     addEventListener('mousemove', (e) => {
       if (document.pointerLockElement === el || this.dragging) {
         this.mouseDX += e.movementX;

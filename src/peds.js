@@ -2,12 +2,12 @@ import { makeHumanoid, animateHumanoid, randomLook } from './characters.js';
 import { blockRect, blockAt, isParkBlock, NBX, NBZ, HALF, PX, PZ, groundHeight } from './world.js';
 import { RNG, clamp, angDiff, mod } from './util.js';
 
-const INSET = 1.4;
+const INSET = 1.0;
 
 // Ambient pedestrians strolling around block sidewalks. A fixed pool is recycled
 // around the player so the streets always feel populated.
 export class Pedestrians {
-  constructor(game, count = 28) {
+  constructor(game, count = 22) {
     this.game = game;
     this.rng = new RNG(4242);
     this.list = [];

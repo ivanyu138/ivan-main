@@ -15,6 +15,7 @@ import { Animals } from './animals.js';
 import { Stash } from './stash.js';
 import { Saloon } from './saloon.js';
 import { BaseCamp } from './basecamp.js';
+import { WaterGun } from './watergun.js';
 import { Quests, QUESTS } from './quests.js';
 import { Sfx } from './audio.js';
 import { CatSelect } from './select.js';
@@ -67,6 +68,7 @@ class Game {
     this.stash = new Stash(this);
     this.baseCamp = new BaseCamp(this);
     this.saloon = new Saloon(this);
+    this.waterGun = new WaterGun(this);
     this.inside = null; // the interior the cat is in, if any
     this.outdoorEnv = { colliders: this.world.colliders, abs: false, ground: (x, z) => groundHeight(x, z) };
     this.quests = new Quests(this);
@@ -232,6 +234,10 @@ class Game {
       const w = p.mouthWorld(), near = this.carryHost().nearest(w.x, w.z, 0.9, p.pos.y);
       if (near) add(`[G] Pick up the ${near.name}`);
       else if (atStash) add(`Base camp stash: ${stash.kinds.length} treasures`);
+    }
+    if (this.waterGun.equipped && !p.carry) {
+      if (inp.pressed('KeyG')) this.ui.toast('Your mouth is full! Put the water gun away first (V)', '#ffb07a');
+      return text;
     }
     if (inp.pressed('KeyG')) {
       if (p.carry && atStash) stash.add(p.release());
@@ -490,6 +496,7 @@ class Game {
     if (inp.pressed('KeyI')) return ui.openPanel('inv');
     if (inp.pressed('KeyC')) return ui.openPanel('char');
     if (inp.pressed('KeyM')) return ui.openPanel('map');
+    if (inp.pressed('KeyV') && !p.vehicle) this.waterGun.toggle();
     const n = inp.digit();
     if (n && ui.hotbarItems && ui.hotbarItems[n - 1]) this.rpg.useItem(ui.hotbarItems[n - 1]);
 

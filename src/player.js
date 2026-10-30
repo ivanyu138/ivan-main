@@ -143,7 +143,7 @@ export class Player {
 
   // With something in its mouth the cat keeps hold of it and gives a muffled "mmrf" instead.
   meow() {
-    const g = this.game, full = !!this.carry;
+    const g = this.game, full = !!this.carry || !!(g.waterGun && g.waterGun.equipped);
     this.meowCd = 0.9;
     this.meowT = full ? 0.5 : 1;
     g.sfx.play(full ? 'mmrf' : 'meow', CATS[this.catId].meow);
@@ -172,7 +172,13 @@ export class Player {
     this.cat = makeCat(id);
     this.root.add(this.cat.group);
     if (this.carry) this.attachCarry();
+    if (this.game.waterGun) this.game.waterGun.attach();
     if (this.game.baseCamp) this.game.baseCamp.refresh();
+  }
+
+  // Turn toward an aim direction (spraying the water gun where the camera looks).
+  aim(target, dt) {
+    this.facing += angDiff(this.facing, target) * (1 - Math.exp(-18 * dt));
   }
 
   canAct() {
@@ -194,6 +200,7 @@ export class Player {
     if (this.vehicle) {
       this.root.visible = false;
       this.pos.copy(this.vehicle.pos);
+      if (g.waterGun) g.waterGun.update(dt);
       return;
     }
     this.root.visible = true;
@@ -217,6 +224,7 @@ export class Player {
       const target = Math.atan2(mx, mz);
       this.facing += angDiff(this.facing, target) * (1 - Math.exp(-14 * dt));
     }
+    if (g.waterGun) g.waterGun.update(dt);
     this.moving = speed > 0;
     this.pos.x += mx * speed * dt;
     this.pos.z += mz * speed * dt;
@@ -253,7 +261,9 @@ export class Player {
     // Scratch
     this.punchCd -= dt;
     if (this.punchT > 0) this.punchT = Math.max(0, this.punchT - dt * 3.2);
-    if (this.canAct() && (inp.pressed('Mouse0') || inp.pressed('KeyR')) && this.punchCd <= 0) {
+    // With the water gun out, click and R spray instead (watergun.js).
+    const armed = g.waterGun && g.waterGun.equipped;
+    if (this.canAct() && !armed && (inp.pressed('Mouse0') || inp.pressed('KeyR')) && this.punchCd <= 0) {
       this.punchCd = 0.42;
       this.punchT = 1;
       g.sfx.play('scratch');

@@ -1,6 +1,6 @@
 # Maple Heights
 
-A small open-world RPG in the browser. You play as one of three cats in third person, with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The cats are Toro (a golden shaded British Shorthair), Uni (a brown tabby with a white belly) and Phantom (a mixed-color tabby with a two-tone face). The world is a compact, procedurally generated, Brooklyn-style neighborhood of about 0.2 square miles (684 m × 684 m), small enough that buildings can have interiors.
+A small open-world RPG in the browser. You play as one of three cats in third person, with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The cats are Toro (a golden shaded British Shorthair), Uni (a brown tabby with a white belly) and Phantom (a mixed-color tabby with a two-tone face). The world is a compact, procedurally generated, Brooklyn-style neighborhood of about 0.09 square miles (480 m × 480 m), small enough that buildings can have interiors.
 
 The cats, people and cars are smooth, rounded models; coat patterns like stripes and patches are painted onto them. Press **P** for a chunkier, pixelated look.
 
@@ -27,7 +27,8 @@ npm run build      # static build in dist/
 | Pinch (trackpad) | zoom camera | zoom camera |
 | Shift | sprint | |
 | Space | jump | handbrake |
-| R or click | scratch | |
+| R or click | scratch (hold to spray with the water gun out) | |
+| V | take out / put away the water gun | |
 | E | hiss | |
 | Q | meow | meow |
 | T | talk / interact / enter shop or saloon / give item (hold to crack a safe) | |
@@ -41,16 +42,17 @@ npm run build      # static build in dist/
 
 ## What's in it
 
-- **World**: a Brooklyn-style grid of long blocks: 3 across and 7 down, each 228 m × 98 m. Avenues run north–south and narrow side streets run east–west.
+- **World**: a Brooklyn-style grid of long blocks: 3 across and 7 down, each about 151 m × 60 m, with narrow 9 m roads and 2 m sidewalks. Avenues run north–south and side streets run east–west.
   - Residential streets are lined with rows of brownstones and brick rowhouses with stoops and cornices, tree-lined sidewalks, and backyards in the middle of each block. Other avenues have five- and six-story apartment buildings with fire escapes.
   - **Main Street** runs down the middle with shops and restaurants on both sides and apartments above. All the game's shops are on it.
   - There's a downtown with Borough Hall to the north, the big Maple Park with a lake and meadow, a few playgrounds, and an industrial waterfront on the East River.
   - There's a day/night cycle (16 real minutes per day), and windows light up at night.
 - **Cats**: pick your cat on the select screen when you start a new game, or switch later with **CHANGE CAT** on the title screen. Cats sprint fast, jump high and sit down when left idle. Each has its own meow; with something in its mouth, a cat keeps hold of it and gives a muffled "mmrf" instead. **Scratch** is your attack. **Meow** makes passers-by stop and look, and sometimes earns you a tip; Whiskers answers if she's in earshot. **Hiss** puffs you up, sends pedestrians running, and knocks back and freezes nearby vandals. Cats can pick up litter they find on the ground (plastic wrap, chip bags, a fish, socks, toy mice, pizza crusts, leaves, feathers, donuts and more) and carry it around in their mouth. Bring fish to Mrs. Hendricks for cat treats, sell socks to Sock Sal on Main Street (with a bonus for every five), or carry anything back to **your stash** at base camp, where your pile of treasures grows and is saved. Yes, they can still drive.
+- **Water gun**: press **V** and your cat grabs an orange water blaster in its mouth (it can't carry anything else while it does, and its meows come out as "mmrf"). Hold **click** or **R** to spray where the camera is looking. Soaked passers-by run off, quest givers complain, vandals get knocked around and worn down, stray animals bolt (cats really hate it), and indoors the saloon crowd jumps and Miss Lottie storms out of her suite. The tank (blue bar) drains while you spray and refills when you stop.
 - **The Golden Spur Saloon** (Main Street): walk in with **T**. Downstairs there's a bar (Hank sells milk and sardines), Ragtime Ruby at the piano, card players and a drifter. Upstairs are guest rooms with resting travelers, a storeroom, and Miss Lottie's suite with a **safe**: hold **T** next to it to crack it for cash, but stop if she starts to turn around, or she'll catch you (−10 rep) and chase you off. Hiss at her and she may flee downstairs. Mugs, a horseshoe, a cowboy hat, cards, poker chips, a harmonica, a sheriff's badge and more can be carried out and stashed; taken items reappear after a while, and the safe refills.
 - **Base camp**: a dead-end brick alley just south of the Borough Hall plaza, past a dumpster and trash cans. It has your stash box, a cat bed, blanket, bowls and a scratching post, and your other two cats lounging around (talk to one to switch to it). Press **T** at the box to spend money on upgrades: a welcome mat and sign ($30), a comfy cushion ($40), fairy lights ($75), a tarp roof ($90), a snack station that heals you ($120), treasure shelves for +50% stash XP ($150) and a cat tree ($220).
 - **Strays and city animals**: stray cats (black, white, grey tabby, orange tabby, tuxedo), dogs, flocks of pigeons and rats wander the sidewalks, plazas and parks. **Hiss** at people or animals and each one has a 50/50 chance of running off or turning on you. Pigeons scatter if you rush at them. Only another cat can hurt you: each stray-cat attack costs exactly 1 HP. Dogs, rats, pigeons and people chase and swat at you but do no damage. Hissing again (or scratching) at an attacker has a 50% chance to scare it off; attackers also give up if you outrun them or after a while.
-- **Traffic**: about 16 AI cars drive in the right-hand lane, turn at intersections, and brake for you and for each other. You can steal any of them.
+- **Traffic**: about 12 AI cars drive in the right-hand lane, turn at intersections, and brake for you and for each other. You can steal any of them.
 - **Pedestrians**: they walk the sidewalks, flee when you punch them or honk, and get knocked over if you drive into them (which costs reputation).
 - **RPG systems**: XP and levels, HP, money, reputation, and four skills (Strength, Speed, Driving, Charisma). Sprinting is unlimited; coffee and energy drinks give a temporary speed boost. You get skill points on level-up, and the gym also trains skills.
 - **Shops** (all on Main Street): the Corner Bodega, Lou's Diner and Tony's Pizza sell consumables. St. Mercy Clinic heals you. Iron Gym trains skills. Vic's Garage repairs cars and sells them; you can buy your own sports car for $1500.
@@ -77,6 +79,7 @@ npm run build      # static build in dist/
 | `src/peds.js`, `src/npcs.js` | Ambient pedestrians, quest givers, enemies |
 | `src/animals.js` | Stray cats, dogs, pigeons and rats |
 | `src/litter.js`, `src/stash.js`, `src/basecamp.js` | Carryable items, the stash and base camp |
+| `src/watergun.js` | The water gun: model, droplet spray and who it soaks |
 | `src/saloon.js` | The two-story saloon interior: its own scene, floors and stairs, people, items and the safe |
 | `src/cat.js`, `src/select.js` | The three playable cats, cat-select screen |
 | `src/characters.js` | Humanoid model and animation (NPCs) |
