@@ -1,24 +1,12 @@
 export const ITEMS = {
   soda: { name: 'Soda', desc: '+25 HP', use: (g) => g.rpg.heal(25) },
-  coffee: { name: 'Coffee', desc: 'Refill stamina', use: (g) => (g.rpg.stamina = g.rpg.maxStamina) },
-  energy: {
-    name: 'Energy Drink', desc: 'Unlimited sprint for 20s',
-    use: (g) => {
-      g.rpg.stamina = g.rpg.maxStamina;
-      g.rpg.boostT = 20;
-    },
-  },
+  coffee: { name: 'Coffee', desc: 'Speed boost for 10s', use: (g) => (g.rpg.boostT = Math.max(g.rpg.boostT, 10)) },
+  energy: { name: 'Energy Drink', desc: 'Speed boost for 25s', use: (g) => (g.rpg.boostT = Math.max(g.rpg.boostT, 25)) },
   bandage: { name: 'Bandage', desc: '+60 HP', use: (g) => g.rpg.heal(60) },
   pie: { name: 'Cherry Pie', desc: '+40 HP', use: (g) => g.rpg.heal(40) },
   pizza: { name: 'Pizza Slice', desc: '+35 HP', use: (g) => g.rpg.heal(35) },
   burger: { name: 'Burger', desc: 'Full heal', use: (g) => g.rpg.heal(9999) },
-  treats: {
-    name: 'Cat Treats', desc: '+30 HP and full stamina',
-    use: (g) => {
-      g.rpg.heal(30);
-      g.rpg.stamina = g.rpg.maxStamina;
-    },
-  },
+  treats: { name: 'Cat Treats', desc: '+30 HP', use: (g) => g.rpg.heal(30) },
 };
 
 export const SHOPS = {
@@ -30,7 +18,7 @@ export const SHOPS = {
     title: 'Iron Gym',
     stock: [
       { service: 'train_strength', label: 'Strength training (+1 STR)', price: 120 },
-      { service: 'train_stamina', label: 'Cardio class (+1 STA)', price: 120 },
+      { service: 'train_stamina', label: 'Cardio class (+1 Speed)', price: 120 },
     ],
   },
   garage: {
@@ -45,7 +33,7 @@ export const SHOPS = {
 
 export const SKILLS = {
   strength: { name: 'Strength', desc: 'Punch damage' },
-  stamina: { name: 'Stamina', desc: 'Sprint speed and endurance' },
+  stamina: { name: 'Speed', desc: 'Sprint speed' },
   driving: { name: 'Driving', desc: 'Top speed and handling' },
   charisma: { name: 'Charisma', desc: 'Shop discounts and quest pay' },
 };
@@ -63,7 +51,6 @@ export class RPG {
     this.money = 40;
     this.maxHp = 100;
     this.hp = 100;
-    this.stamina = 100;
     this.rep = 0;
     this.skillPoints = 0;
     this.skills = { strength: 1, stamina: 1, driving: 1, charisma: 1 };
@@ -74,11 +61,6 @@ export class RPG {
     this.socksSold = 0;
     this.stash = [];
     this.boostT = 0;
-    this.drainT = 0;
-  }
-
-  get maxStamina() {
-    return 100 + (this.skills.stamina - 1) * 12;
   }
 
   get xpNext() {
@@ -129,16 +111,8 @@ export class RPG {
     this.hp = Math.min(this.maxHp, this.hp + n);
   }
 
-  drainStamina(dt) {
-    this.drainT = 0.8;
-    if (this.boostT > 0) return;
-    this.stamina = Math.max(0, this.stamina - dt * (24 - this.skills.stamina * 1.4));
-  }
-
   update(dt) {
     this.boostT = Math.max(0, this.boostT - dt);
-    this.drainT -= dt;
-    if (this.drainT < 0) this.stamina = Math.min(this.maxStamina, this.stamina + dt * (14 + this.skills.stamina * 2));
   }
 
   addItem(id, n = 1) {
@@ -162,12 +136,13 @@ export class RPG {
   }
 
   serialize() {
-    const { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold } = this;
+    const { level, xp, money, maxHp, hp, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold } = this;
     const stash = this.game.stash ? this.game.stash.kinds : this.stash;
-    return { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold, stash };
+    return { level, xp, money, maxHp, hp, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold, stash };
   }
 
   load(d) {
-    Object.assign(this, d);
+    const { stamina, ...rest } = d;
+    Object.assign(this, rest);
   }
 }

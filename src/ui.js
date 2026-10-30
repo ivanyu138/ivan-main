@@ -38,7 +38,7 @@ export class UI {
     this.game = game;
     this.el = {
       lvl: $('lvl'), money: $('money'), clock: $('clock'),
-      hp: document.querySelector('.bar.hp .fill'), st: document.querySelector('.bar.st .fill'), xp: document.querySelector('.bar.xp .fill'),
+      hp: document.querySelector('.bar.hp .fill'), xp: document.querySelector('.bar.xp .fill'),
       objective: $('objective'), toasts: $('toasts'), prompt: $('prompt'), hotbar: $('hotbar'), speedo: $('speedo'),
       dialog: $('dialog'), panel: $('panel'), dead: $('dead'),
     };
@@ -89,8 +89,6 @@ export class UI {
     this.set('money', this.el.money, `$${r.money}`);
     this.set('clock', this.el.clock, g.sky.clock);
     this.el.hp.style.width = `${(100 * r.hp) / r.maxHp}%`;
-    this.el.st.style.width = `${(100 * r.stamina) / r.maxStamina}%`;
-    this.el.st.style.background = r.boostT > 0 ? '#7ae6ff' : '';
     this.el.xp.style.width = `${(100 * r.xp) / r.xpNext}%`;
 
     const o = g.quests.objective();
@@ -100,6 +98,7 @@ export class UI {
       if (o.dist != null) html += `<div class="dim">${o.dist} m</div>`;
       if (o.time != null) html += `<div class="t">${Math.max(0, Math.ceil(o.time))}s</div>`;
     } else html = '<div class="dim">No active quest &mdash; look for <b style="color:#ffd34d">!</b> on the map</div>';
+    if (r.boostT > 0) html += `<div style="color:#7ae6ff">Speed boost: ${Math.ceil(r.boostT)}s</div>`;
     if (r.skillPoints > 0) html += `<div style="color:#9fd0ff">Skill point available [C]</div>`;
     this.set('obj', this.el.objective, html);
 

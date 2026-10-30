@@ -50,7 +50,7 @@ npm run build      # static build in dist/
 - **Strays and city animals**: stray cats (black, white, grey tabby, orange tabby, tuxedo), dogs, flocks of pigeons and rats wander the sidewalks, plazas and parks. **Hiss** at people or animals and each one has a 50/50 chance of running off or turning on you. Pigeons scatter if you rush at them. Only another cat can hurt you: each stray-cat attack costs exactly 1 HP. Dogs, rats, pigeons and people chase and swat at you but do no damage. Hissing again (or scratching) at an attacker has a 50% chance to scare it off; attackers also give up if you outrun them or after a while.
 - **Traffic**: about 45 AI cars drive in the right-hand lane, turn at intersections, and brake for you and for each other. You can steal any of them.
 - **Pedestrians**: they walk the sidewalks, flee when you punch them or honk, and get knocked over if you drive into them (which costs reputation).
-- **RPG systems**: XP and levels, HP and stamina, money, reputation, and four skills (Strength, Stamina, Driving, Charisma). You get skill points on level-up, and the gym also trains skills.
+- **RPG systems**: XP and levels, HP, money, reputation, and four skills (Strength, Speed, Driving, Charisma). Sprinting is unlimited; coffee and energy drinks give a temporary speed boost. You get skill points on level-up, and the gym also trains skills.
 - **Shops** (all on Main Street): the Corner Bodega, Lou's Diner and Tony's Pizza sell consumables. St. Mercy Clinic heals you. Iron Gym trains skills. Vic's Garage repairs cars and sells them; you can buy your own sports car for $1500.
 - **Quests** (look for `!` above NPCs and on the minimap):
   - *Welcome to Maple Heights* (Mayor Rosa): tour the neighborhood

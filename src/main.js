@@ -3,7 +3,7 @@ import { World, CURB, groundHeight } from './world.js';
 import { DayNight } from './sky.js';
 import { Input } from './input.js';
 import { UI } from './ui.js';
-import { RPG, SHOPS, SKILL_MAX } from './rpg.js';
+import { RPG, SHOPS, SKILLS, SKILL_MAX } from './rpg.js';
 import { Player } from './player.js';
 import { CameraRig } from './camera.js';
 import { Traffic } from './vehicles.js';
@@ -379,7 +379,7 @@ class Game {
         if (r.skills[k] >= SKILL_MAX) return deny('Already maxed out');
         pay();
         r.skills[k]++;
-        ui.toast(`${k[0].toUpperCase() + k.slice(1)} is now ${r.skills[k]}`, '#9fd0ff');
+        ui.toast(`${SKILLS[k].name} is now ${r.skills[k]}`, '#9fd0ff');
         break;
       }
       case 'repair': {

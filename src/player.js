@@ -206,9 +206,9 @@ export class Player {
     if (len > 0.01) {
       mx /= len;
       mz /= len;
-      const sprint = (inp.down('ShiftLeft') || inp.down('ShiftRight')) && rpg.stamina > 1;
-      speed = sprint ? 8 + 0.35 * rpg.skills.stamina : 3.4;
-      if (sprint) rpg.drainStamina(dt);
+      // Sprinting is unlimited; the Speed skill and coffee/energy-drink boosts make it faster.
+      const sprint = inp.down('ShiftLeft') || inp.down('ShiftRight');
+      speed = (sprint ? 8 + 0.35 * rpg.skills.stamina : 3.4) * (rpg.boostT > 0 ? 1.25 : 1);
       const target = Math.atan2(mx, mz);
       this.facing += angDiff(this.facing, target) * (1 - Math.exp(-14 * dt));
     }
