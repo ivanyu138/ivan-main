@@ -46,8 +46,11 @@ function frontZ(cz, rx, ry, rz, dx, dy) {
 
 // Rounded cat facing +z: merged body/head, four legs pivoting at the hips and shoulders, and a tail.
 // Coat patterns (stripes, patches, shading, the split face) are painted per vertex.
-export function makeCat(id) {
-  const c = CATS[id], S = { ...BASE, ...c.shape };
+// id is one of the playable cats, or a coat definition in the same shape as CATS entries.
+// lite builds a lower-detail version for background animals.
+export function makeCat(id, lite = false) {
+  const c = typeof id === 'string' ? CATS[id] : id, S = { ...BASE, ...c.shape };
+  const Q = (n) => (lite ? Math.max(6, Math.round(n * 0.5)) : n);
   const L = S.leg, y0 = L - 0.08, T = y0 + S.bh, cy = y0 + S.bh / 2;
   const hz = S.bd / 2 + 0.07, hcy = T - 0.06 + S.hh / 2, front = hz + S.hd / 2;
 
@@ -81,33 +84,33 @@ export function makeCat(id) {
 
   const b = new SmoothBuilder();
   // Torso: chest, belly and hips as overlapping ellipsoids.
-  b.sphere([0, cy, 0], [S.bw / 2, S.bh / 2, S.bd / 2], coat, 28);
-  b.sphere([0, cy + 0.015, S.bd * 0.27], [S.bw * 0.48, S.bh * 0.5, S.bd * 0.25], coat, 20);
-  b.sphere([0, cy, -S.bd * 0.27], [S.bw * 0.5, S.bh * 0.49, S.bd * 0.25], coat, 20);
-  b.sphere([0, cy + S.bh * 0.32, S.bd * 0.42], [S.hw * 0.36, S.hh * 0.42, S.hd * 0.42], coat, 14);
+  b.sphere([0, cy, 0], [S.bw / 2, S.bh / 2, S.bd / 2], coat, Q(28));
+  b.sphere([0, cy + 0.015, S.bd * 0.27], [S.bw * 0.48, S.bh * 0.5, S.bd * 0.25], coat, Q(20));
+  b.sphere([0, cy, -S.bd * 0.27], [S.bw * 0.5, S.bh * 0.49, S.bd * 0.25], coat, Q(20));
+  b.sphere([0, cy + S.bh * 0.32, S.bd * 0.42], [S.hw * 0.36, S.hh * 0.42, S.hd * 0.42], coat, Q(14));
 
   // Head
   const hr = [S.hw / 2, S.hh / 2, S.hd / 2];
-  b.sphere([0, hcy, hz], hr, face, 24);
-  b.sphere([0, hcy - S.hh * 0.18, hz + S.hd * 0.08], [S.cheek / 2, S.cheekH * 0.62, S.hd * 0.42], face, 18);
+  b.sphere([0, hcy, hz], hr, face, Q(24));
+  b.sphere([0, hcy - S.hh * 0.18, hz + S.hd * 0.08], [S.cheek / 2, S.cheekH * 0.62, S.hd * 0.42], face, Q(18));
   const padY = hcy - S.hh * 0.22, padZ = frontZ(hz, hr[0], hr[1], hr[2], 0.03, padY - hcy);
-  for (const sx of [-1, 1]) b.sphere([sx * 0.033, padY, padZ - 0.012], [0.042, 0.034, 0.034], c.muzzle, 12);
-  b.sphere([0, hcy - S.hh * 0.36, padZ - 0.03], [0.03, 0.022, 0.026], c.light, 10);
-  b.sphere([0, hcy - S.hh * 0.08, frontZ(hz, hr[0], hr[1], hr[2], 0, -S.hh * 0.08) + 0.008], [0.022, 0.016, 0.014], c.nose || '#e8909a', 10);
+  for (const sx of [-1, 1]) b.sphere([sx * 0.033, padY, padZ - 0.012], [0.042, 0.034, 0.034], c.muzzle, Q(12));
+  b.sphere([0, hcy - S.hh * 0.36, padZ - 0.03], [0.03, 0.022, 0.026], c.light, Q(10));
+  b.sphere([0, hcy - S.hh * 0.08, frontZ(hz, hr[0], hr[1], hr[2], 0, -S.hh * 0.08) + 0.008], [0.022, 0.016, 0.014], c.nose || '#e8909a', Q(10));
   const ey = S.hh * 0.08;
   for (const sx of [-1, 1]) {
     const ex = sx * S.hw * 0.22, ez = frontZ(hz, hr[0], hr[1], hr[2], ex, ey);
-    b.sphere([ex, hcy + ey, ez - 0.012], [S.eyeW / 2, S.eyeH / 2, 0.02], c.eye, 14);
-    b.sphere([ex, hcy + ey, ez + 0.004], [S.eyeW * (c.roundPupil ? 0.2 : 0.09), S.eyeH * 0.4, 0.008], '#111111', 10);
-    b.sphere([ex + 0.008, hcy + ey + S.eyeH * 0.18, ez + 0.009], [0.006, 0.006, 0.003], '#ffffff', 6);
+    b.sphere([ex, hcy + ey, ez - 0.012], [S.eyeW / 2, S.eyeH / 2, 0.02], c.eye, Q(14));
+    b.sphere([ex, hcy + ey, ez + 0.004], [S.eyeW * (c.roundPupil ? 0.2 : 0.09), S.eyeH * 0.4, 0.008], '#111111', Q(10));
+    b.sphere([ex + 0.008, hcy + ey + S.eyeH * 0.18, ez + 0.009], [0.006, 0.006, 0.003], '#ffffff', Q(6));
     // Ears: a soft cone with a pink inner cone, tilted outward.
     const earCol = c.faceL ? (sx < 0 ? c.faceL : c.faceR) : c.top || c.body;
     const eyY = hcy + S.hh * 0.38, ezE = hz - 0.01;
-    b.cone([sx * S.earX, eyY + 0.05 * S.ear, ezE], 0.058 * S.ear, 0.13 * S.ear, earCol, [0, 0, -sx * 0.3], 12, [1, 1, 0.55]);
-    b.cone([sx * S.earX + sx * 0.004, eyY + 0.045 * S.ear, ezE + 0.018 * S.ear], 0.036 * S.ear, 0.095 * S.ear, '#e8a0a0', [0, 0, -sx * 0.3], 10, [1, 1, 0.3]);
+    b.cone([sx * S.earX, eyY + 0.05 * S.ear, ezE], 0.058 * S.ear, 0.13 * S.ear, earCol, [0, 0, -sx * 0.3], Q(12), [1, 1, 0.55]);
+    b.cone([sx * S.earX + sx * 0.004, eyY + 0.045 * S.ear, ezE + 0.018 * S.ear], 0.036 * S.ear, 0.095 * S.ear, '#e8a0a0', [0, 0, -sx * 0.3], Q(10), [1, 1, 0.3]);
     // Whiskers
-    for (const dy of [-0.012, 0.004, 0.02]) {
-      b.cylinder([sx * 0.1, padY + dy, padZ - 0.01], 0.0022, 0.0022, 0.13, '#f4f0e6', [0, sx * 0.25, Math.PI / 2 + sx * dy * 6], 3);
+    if (!lite) for (const dy of [-0.012, 0.004, 0.02]) {
+      b.cylinder([sx * 0.1, padY + dy, padZ - 0.01], 0.0022, 0.0022, 0.13, '#f4f0e6', [0, sx * 0.25, Math.PI / 2 + sx * dy * 6], Q(3));
     }
   }
   const body = new THREE.Mesh(b.build(), charMat);
@@ -116,9 +119,9 @@ export function makeCat(id) {
   const legGeo = (back) => {
     const lb = new SmoothBuilder();
     const r = S.legW / 2;
-    lb.capsule([0, -(L - 0.03) / 2, 0], r * 1.05, Math.max(0.01, L - 0.03 - 2 * r), (x, y, z) => (y < -L + 0.07 ? c.paws : back ? coat(x, y + L, z - S.bd * 0.32, 0, 0, 0) : c.body), [0, 0, 0], 10);
-    if (back) lb.sphere([0, -0.03, -0.005], [S.legW * 0.8, L * 0.38, S.legW * 1.15], (x, y, z, nx, ny, nz) => coat(x, y + L, z - S.bd * 0.32, nx, ny, nz), 12);
-    lb.sphere([0, -L + 0.03, 0.018], [S.legW * 0.62, 0.035, S.legW * 0.82], c.paws, 12);
+    lb.capsule([0, -(L - 0.03) / 2, 0], r * 1.05, Math.max(0.01, L - 0.03 - 2 * r), (x, y, z) => (y < -L + 0.07 ? c.paws : back ? coat(x, y + L, z - S.bd * 0.32, 0, 0, 0) : c.body), [0, 0, 0], Q(10));
+    if (back) lb.sphere([0, -0.03, -0.005], [S.legW * 0.8, L * 0.38, S.legW * 1.15], (x, y, z, nx, ny, nz) => coat(x, y + L, z - S.bd * 0.32, nx, ny, nz), Q(12));
+    lb.sphere([0, -L + 0.03, 0.018], [S.legW * 0.62, 0.035, S.legW * 0.82], c.paws, Q(12));
     return lb.build();
   };
   const frontLeg = legGeo(false), backLeg = legGeo(true);
@@ -138,8 +141,8 @@ export function makeCat(id) {
     if (c.patches && z < -tl * 0.35 && z > -tl * 0.6) return c.patches[0];
     return c.top || c.body;
   };
-  tb.tube([[0, 0, 0.02], [0, 0.01, -tl * 0.35], [0, 0.035, -tl * 0.7], [0, 0.07, -tl]], tr, tailPaint, 18, 10);
-  tb.sphere([0, 0.07, -tl], [tr, tr, tr], tailPaint, 10);
+  tb.tube([[0, 0, 0.02], [0, 0.01, -tl * 0.35], [0, 0.035, -tl * 0.7], [0, 0.07, -tl]], tr, tailPaint, 18, Q(10));
+  tb.sphere([0, 0.07, -tl], [tr, tr, tr], tailPaint, Q(10));
   const tail = new THREE.Mesh(tb.build(), charMat);
   tail.position.set(0, T - 0.05, -S.bd / 2 + 0.03);
 

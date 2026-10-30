@@ -99,6 +99,10 @@ export class Sfx {
       case 'meowback': this.meow(arg || 950, 0.6); break;
       case 'hiss': this.hiss(0.8); break;
       case 'scratch': for (let i = 0; i < 3; i++) this.hiss(0.05, i * 0.045); break;
+      case 'bark': this.noise(0.09, 0.5, 900); this.tone(260, 0.1, 'sawtooth', 0.2, -90); this.noise(0.08, 0.4, 900); this.tone(240, 0.09, 'sawtooth', 0.18, -80, 0.16); break;
+      case 'squeak': this.tone(2400, 0.07, 'sine', 0.12, 600); this.tone(2600, 0.06, 'sine', 0.1, 500, 0.09); break;
+      case 'flap': for (let i = 0; i < 4; i++) this.hiss(0.04, i * 0.06); break;
+      case 'yowl': this.meow((arg || 600) * 0.7); this.hiss(0.5, 0.15); break;
       case 'pick': this.tone(520, 0.06, 'triangle', 0.18, 260); break;
       case 'drop': this.tone(420, 0.07, 'triangle', 0.15, -180); break;
       case 'buy': this.tone(1200, 0.05, 'square', 0.12); this.tone(1600, 0.1, 'square', 0.12, 0, 0.05); break;

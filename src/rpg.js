@@ -118,7 +118,7 @@ export class RPG {
     const g = this.game;
     if (g.dead) return;
     this.hp -= n;
-    g.ui.flash();
+    g.ui.flash(Math.min(0.35, 0.1 + n * 0.03));
     if (this.hp <= 0) {
       this.hp = 0;
       g.die();

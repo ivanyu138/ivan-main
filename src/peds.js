@@ -106,6 +106,29 @@ export class Pedestrians {
     return out;
   }
 
+  // Hissed at: each person either runs off or chases the cat to shoo it away (50/50).
+  // People already chasing have the same chance of giving up.
+  hissAt(x, z, radius) {
+    const g = this.game;
+    for (const p of this.list) {
+      if (!p.h.group.visible || p.state === 'down') continue;
+      if (Math.hypot(p.pos.x - x, p.pos.z - z) > (p.state === 'chase' ? radius + 3 : radius)) continue;
+      const fight = this.rng.chance(0.5);
+      if (p.state === 'chase') {
+        if (fight) g.animals.toast('"I said SHOO!"', '#ff8a7a');
+        else {
+          this.flee(p, x, z, 4);
+          g.animals.toast('They back off!', '#cfe8b0');
+        }
+      } else if (fight) {
+        p.state = 'chase';
+        p.timer = this.rng.range(7, 10);
+        p.cd = 0.4;
+        g.animals.toast('"Hey! Shoo! Get outta here!"', '#ffb07a');
+      } else this.flee(p, x, z, 5);
+    }
+  }
+
   scare(x, z, radius) {
     for (const p of this.list) if (Math.hypot(p.pos.x - x, p.pos.z - z) < radius) this.flee(p, x, z, 4);
   }
@@ -203,6 +226,24 @@ export class Pedestrians {
         }
         speed = Math.hypot(vx, vz);
         if (speed > 0.1) p.facing += angDiff(p.facing, Math.atan2(vx, vz)) * Math.min(1, dt * 10);
+      } else if (p.state === 'chase') {
+        // Chasing the cat off: stomp and swat at it, but people never actually hurt you.
+        const dx = pl.x - p.pos.x, dz = pl.z - p.pos.z, dd = Math.hypot(dx, dz) || 1;
+        p.timer -= dt;
+        p.cd -= dt;
+        if (p.timer < 0 || dd > 20 || g.player.vehicle) p.state = 'return';
+        else if (dd > 0.95) {
+          speed = 4.2;
+          p.pos.x += (dx / dd) * speed * dt;
+          p.pos.z += (dz / dd) * speed * dt;
+          col.resolveCircle(p.pos, 0.35, 0.5);
+        } else if (p.cd <= 0) {
+          p.cd = 1.1;
+          p.punchT = 1;
+          g.sfx.play('swing');
+          g.cam.shake = 0.05;
+        }
+        p.facing += angDiff(p.facing, Math.atan2(dx, dz)) * Math.min(1, dt * 10);
       } else if (p.state === 'look') {
         p.timer -= dt;
         p.facing += angDiff(p.facing, Math.atan2(p.lookX - p.pos.x, p.lookZ - p.pos.z)) * Math.min(1, dt * 6);
@@ -226,7 +267,8 @@ export class Pedestrians {
       p.phase += dt * (speed > 3 ? 12 : 7) * (moving ? 1 : 0);
       p.pos.y = groundHeight(p.pos.x, p.pos.z);
       p.h.group.rotation.y = p.facing;
-      animateHumanoid(p.h, p.phase, moving, 0, p.state === 'down');
+      p.punchT = Math.max(0, (p.punchT || 0) - dt * 3);
+      animateHumanoid(p.h, p.phase, moving, p.punchT, p.state === 'down');
     }
   }
 

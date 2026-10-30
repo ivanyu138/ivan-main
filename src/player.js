@@ -157,7 +157,8 @@ export class Player {
     this.hissT = 1;
     g.sfx.play('hiss');
     this.say('hiss');
-    g.peds.scare(this.pos.x, this.pos.z, 11);
+    g.peds.hissAt(this.pos.x, this.pos.z, 9);
+    g.animals.hissAt(this.pos, 8);
     g.npcs.hissAt(this.pos, 4.5);
   }
 
@@ -252,7 +253,7 @@ export class Player {
       this.claw.visible = true;
       const fx = Math.sin(this.facing), fz = Math.cos(this.facing);
       const dmg = 7 + rpg.skills.strength * 3;
-      const hit = g.npcs.hitInFront(this.pos, fx, fz, dmg) || g.peds.hitInFront(this.pos, fx, fz, dmg);
+      const hit = g.npcs.hitInFront(this.pos, fx, fz, dmg) || g.animals.hitInFront(this.pos, fx, fz) || g.peds.hitInFront(this.pos, fx, fz, dmg);
       if (hit) g.sfx.play('punch');
     }
 

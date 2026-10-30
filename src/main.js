@@ -11,6 +11,7 @@ import { Pedestrians } from './peds.js';
 import { NPCs } from './npcs.js';
 import { Pickups } from './pickups.js';
 import { Litter } from './litter.js';
+import { Animals } from './animals.js';
 import { Stash } from './stash.js';
 import { Quests, QUESTS } from './quests.js';
 import { Sfx } from './audio.js';
@@ -57,6 +58,7 @@ class Game {
     this.cam.shake = 0;
     this.traffic = new Traffic(this);
     this.peds = new Pedestrians(this);
+    this.animals = new Animals(this);
     this.npcs = new NPCs(this);
     this.pickups = new Pickups(this);
     this.litter = new Litter(this);
@@ -513,6 +515,7 @@ class Game {
     this.player.update(dt);
     this.traffic.update(dt);
     this.peds.update(dt);
+    this.animals.update(dt);
     this.npcs.update(dt);
     this.pickups.update(dt);
     this.litter.update(dt);

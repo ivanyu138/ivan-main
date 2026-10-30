@@ -68,9 +68,9 @@ export class UI {
     setTimeout(() => d.remove(), 3500);
   }
 
-  flash() {
+  flash(strength = 0.35) {
     this.flashEl.style.transition = 'none';
-    this.flashEl.style.opacity = '0.35';
+    this.flashEl.style.opacity = String(strength);
     requestAnimationFrame(() => {
       this.flashEl.style.transition = 'opacity 0.4s';
       this.flashEl.style.opacity = '0';
@@ -178,6 +178,13 @@ export class UI {
       const [mx, my] = to(c.pos.x, c.pos.z);
       x.fillStyle = '#4fa3e8';
       x.fillRect(mx - 3, my - 3, 6, 6);
+    }
+    for (const a of g.animals.attackers()) {
+      const [mx, my] = to(a.pos.x, a.pos.z);
+      x.fillStyle = a.kind === 'cat' ? '#e33' : '#e8a040';
+      x.beginPath();
+      x.arc(mx, my, 3, 0, Math.PI * 2);
+      x.fill();
     }
     for (const e of g.npcs.enemies) {
       if (e.state === 'down') continue;
