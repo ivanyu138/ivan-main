@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MeshBuilder } from './geo.js';
+import { SmoothBuilder, lerpColor, smooth01 } from './smooth.js';
 import { charMat } from './characters.js';
 
 // Proportions shared by the cats unless a cat overrides them.
@@ -16,7 +16,7 @@ export const CATS = {
     desc: 'Golden shaded British Shorthair. Round, plush and green-eyed.',
     // Golden coat with darker tipping along the back, head and tail; cream underneath.
     body: '#e2b36c', top: '#b88a42', light: '#f6e5c2', muzzle: '#f7e9cc', paws: '#eed39e',
-    eye: '#5fae5a', nose: '#c4786a', meow: 520,
+    eye: '#5fae5a', nose: '#c4786a', roundPupil: true, meow: 520,
     shape: {
       bw: 0.44, bh: 0.34, bd: 0.6, leg: 0.22, legW: 0.12,
       hw: 0.38, hh: 0.3, hd: 0.28, cheek: 0.46, cheekH: 0.16,
@@ -39,86 +39,109 @@ export const CATS = {
 };
 export const CAT_ORDER = ['ginger', 'tabby', 'calico'];
 
-function ear(b, x, y, z, s, outer, inner) {
-  const w = 0.06 * s, d = 0.04 * s, h = 0.12 * s;
-  const apex = [x, y + h, z];
-  b.tri([x - w, y, z + d], [x + w, y, z + d], apex, outer);
-  b.tri([x + w, y, z - d], [x - w, y, z - d], apex, outer);
-  b.tri([x - w, y, z - d], [x - w, y, z + d], apex, outer);
-  b.tri([x + w, y, z + d], [x + w, y, z - d], apex, outer);
-  b.tri([x - 0.035 * s, y + 0.01, z + d + 0.002], [x + 0.035 * s, y + 0.01, z + d + 0.002], [x, y + 0.08 * s, z + 0.02 * s], inner);
+// Point on the surface of an axis-aligned ellipsoid, in front (+z) at offset (dx, dy) from its center.
+function frontZ(cz, rx, ry, rz, dx, dy) {
+  return cz + rz * Math.sqrt(Math.max(0, 1 - (dx / rx) ** 2 - (dy / ry) ** 2));
 }
 
-// Blocky cat facing +z: merged body/head, four legs pivoting at the hips and shoulders, and a tail.
+// Rounded cat facing +z: merged body/head, four legs pivoting at the hips and shoulders, and a tail.
+// Coat patterns (stripes, patches, shading, the split face) are painted per vertex.
 export function makeCat(id) {
   const c = CATS[id], S = { ...BASE, ...c.shape };
-  const L = S.leg, y0 = L - 0.08, T = y0 + S.bh;
-  const b = new MeshBuilder();
+  const L = S.leg, y0 = L - 0.08, T = y0 + S.bh, cy = y0 + S.bh / 2;
+  const hz = S.bd / 2 + 0.07, hcy = T - 0.06 + S.hh / 2, front = hz + S.hd / 2;
 
-  // Body, underside and chest.
-  b.box(0, y0, 0, S.bw, S.bh, S.bd, c.body);
-  if (c.belly) b.box(0, y0 - 0.004, 0.02, S.bw + 0.008, S.bh * 0.42, S.bd * 0.78, c.light);
-  else b.box(0, y0 - 0.005, 0.02, S.bw * 0.8, 0.02, S.bd * 0.8, c.light);
-  b.box(0, y0 + 0.02, S.bd / 2 - 0.01, S.bw * 0.86, S.bh * 0.75, 0.04, c.light);
-  if (c.top) b.box(0, T - 0.09, -0.02, S.bw + 0.008, 0.094, S.bd * 0.92, c.top);
-  if (c.patches) {
-    const [orange, brown] = c.patches;
-    b.box(S.bw * 0.15, y0 + 0.05, -0.14, S.bw * 0.75, S.bh * 0.85, 0.22, orange);
-    b.box(-S.bw * 0.18, y0 + 0.1, 0.1, S.bw * 0.7, S.bh * 0.7, 0.18, brown);
-    b.box(-S.bw * 0.1, T, -0.02, S.bw * 0.4, 0.012, 0.14, orange);
-  }
-  if (c.stripe) {
-    for (const z of [-0.24, -0.12, 0, 0.12]) b.box(0, T - 0.13, z, S.bw + 0.006, 0.134, 0.035, c.stripe);
-    b.box(0, T, -0.06, 0.05, 0.006, S.bd * 0.8, c.stripe);
-  }
+  // Phantom's tortoiseshell: blotches of orange and brown over the grey-brown coat.
+  const base = (x, y, z) => {
+    if (!c.patches) return c.body;
+    const n = Math.sin(x * 11 + z * 6.5) + Math.sin(z * 9.3 - y * 7 + 1.7) + Math.sin(x * 5 - y * 12 + 0.4);
+    return n > 1.0 ? c.patches[0] : n < -1.1 ? c.patches[1] : c.body;
+  };
+  const coat = (x, y, z, nx, ny, nz) => {
+    let col = lerpColor(base(x, y, z), base(x, y, z), 0);
+    if (c.top) col = lerpColor(col, c.top, smooth01(0.25, 0.95, ny));
+    if (c.stripe && ny > -0.3 && Math.sin(z * 38 + 1) > 0.42) col = lerpColor(col, c.stripe, c.patches ? 0.75 : 1);
+    if (c.stripe && Math.abs(x) < 0.03 && ny > 0.8) col.set(c.stripe);
+    const under = c.belly ? smooth01(0.1, -0.35, ny) : smooth01(-0.45, -0.85, ny);
+    col = lerpColor(col, c.light, under);
+    if (z > S.bd * 0.3 && y < cy + S.bh * 0.2) col = lerpColor(col, c.light, smooth01(S.bd * 0.3, S.bd * 0.42, z));
+    return col;
+  };
+  const face = (x, y, z, nx, ny, nz) => {
+    let col = c.faceL ? (x < 0 ? c.faceL : c.faceR) : c.body;
+    if (c.top) col = lerpColor(col, c.top, smooth01(0.35, 0.95, ny) * 0.8);
+    // Forehead "M": on Phantom only on the darker half, faint on the orange half.
+    if (c.stripe && y > hcy + S.hh * 0.12 && nz > 0.15 && Math.sin(x * 70) > 0.55) {
+      col = c.faceL && x > 0 ? lerpColor(col, '#a8602a', 0.8) : c.stripe;
+    }
+    if (c.stripe && ny > 0.85 && Math.abs(x) < 0.02) col = c.faceL && x > 0 ? col : c.stripe;
+    if (ny < -0.35 && nz > 0.1) col = lerpColor(col, c.light, 0.85);
+    return col;
+  };
 
-  // Head. Phantom's face is two colors, split down the middle.
-  const hz = S.bd / 2 + 0.07, hy = T - 0.06, front = hz + S.hd / 2;
-  const halves = c.faceL ? [[-1, c.faceL], [1, c.faceR]] : [[0, c.body]];
-  for (const [side, col] of halves) {
-    const w = side ? S.hw / 2 : S.hw, cw = side ? S.cheek / 2 : S.cheek;
-    b.box((side * S.hw) / 4, hy, hz, w, S.hh, S.hd, col);
-    b.box((side * S.cheek) / 4, hy - 0.02, hz + 0.04, cw, S.cheekH, S.hd * 0.62, col);
-  }
-  if (c.top) b.box(0, hy + S.hh - 0.05, hz - 0.01, S.hw + 0.006, 0.054, S.hd * 0.9, c.top);
-  b.box(0, hy, front, 0.17, 0.1, 0.05, c.muzzle);
-  b.box(0, hy + 0.08, front + 0.028, 0.045, 0.03, 0.012, c.nose || '#e8909a');
-  const ey = hy + S.hh * 0.48;
+  const b = new SmoothBuilder();
+  // Torso: chest, belly and hips as overlapping ellipsoids.
+  b.sphere([0, cy, 0], [S.bw / 2, S.bh / 2, S.bd / 2], coat, 28);
+  b.sphere([0, cy + 0.015, S.bd * 0.27], [S.bw * 0.48, S.bh * 0.5, S.bd * 0.25], coat, 20);
+  b.sphere([0, cy, -S.bd * 0.27], [S.bw * 0.5, S.bh * 0.49, S.bd * 0.25], coat, 20);
+  b.sphere([0, cy + S.bh * 0.32, S.bd * 0.42], [S.hw * 0.36, S.hh * 0.42, S.hd * 0.42], coat, 14);
+
+  // Head
+  const hr = [S.hw / 2, S.hh / 2, S.hd / 2];
+  b.sphere([0, hcy, hz], hr, face, 24);
+  b.sphere([0, hcy - S.hh * 0.18, hz + S.hd * 0.08], [S.cheek / 2, S.cheekH * 0.62, S.hd * 0.42], face, 18);
+  const padY = hcy - S.hh * 0.22, padZ = frontZ(hz, hr[0], hr[1], hr[2], 0.03, padY - hcy);
+  for (const sx of [-1, 1]) b.sphere([sx * 0.033, padY, padZ - 0.012], [0.042, 0.034, 0.034], c.muzzle, 12);
+  b.sphere([0, hcy - S.hh * 0.36, padZ - 0.03], [0.03, 0.022, 0.026], c.light, 10);
+  b.sphere([0, hcy - S.hh * 0.08, frontZ(hz, hr[0], hr[1], hr[2], 0, -S.hh * 0.08) + 0.008], [0.022, 0.016, 0.014], c.nose || '#e8909a', 10);
+  const ey = S.hh * 0.08;
   for (const sx of [-1, 1]) {
-    b.box(sx * S.hw * 0.23, ey, front + 0.001, S.eyeW, S.eyeH, 0.006, c.eye);
-    b.box(sx * S.hw * 0.23, ey, front + 0.005, S.eyeW * 0.25, S.eyeH * 0.9, 0.004, '#111111');
+    const ex = sx * S.hw * 0.22, ez = frontZ(hz, hr[0], hr[1], hr[2], ex, ey);
+    b.sphere([ex, hcy + ey, ez - 0.012], [S.eyeW / 2, S.eyeH / 2, 0.02], c.eye, 14);
+    b.sphere([ex, hcy + ey, ez + 0.004], [S.eyeW * (c.roundPupil ? 0.2 : 0.09), S.eyeH * 0.4, 0.008], '#111111', 10);
+    b.sphere([ex + 0.008, hcy + ey + S.eyeH * 0.18, ez + 0.009], [0.006, 0.006, 0.003], '#ffffff', 6);
+    // Ears: a soft cone with a pink inner cone, tilted outward.
     const earCol = c.faceL ? (sx < 0 ? c.faceL : c.faceR) : c.top || c.body;
-    ear(b, sx * S.earX, hy + S.hh, hz - 0.02, S.ear, earCol, '#e8a0a0');
-  }
-  if (c.stripe) {
-    // Forehead "M"; on Phantom it sits on the darker half and the orange half gets fainter marks.
-    const xs = c.faceL ? [-0.1, -0.06, -0.02] : [-0.06, 0, 0.06];
-    for (const x of xs) b.box(x, hy + S.hh * 0.77, front - 0.002, 0.018, 0.05, 0.006, c.stripe);
-    if (c.faceL) for (const x of [0.05, 0.09]) b.box(x, hy + S.hh * 0.77, front - 0.002, 0.016, 0.04, 0.006, '#a8602a');
-    b.box(0, hy + S.hh - 0.002, hz - 0.02, 0.03, 0.006, S.hd * 0.7, c.stripe);
+    const eyY = hcy + S.hh * 0.38, ezE = hz - 0.01;
+    b.cone([sx * S.earX, eyY + 0.05 * S.ear, ezE], 0.058 * S.ear, 0.13 * S.ear, earCol, [0, 0, -sx * 0.3], 12, [1, 1, 0.55]);
+    b.cone([sx * S.earX + sx * 0.004, eyY + 0.045 * S.ear, ezE + 0.018 * S.ear], 0.036 * S.ear, 0.095 * S.ear, '#e8a0a0', [0, 0, -sx * 0.3], 10, [1, 1, 0.3]);
+    // Whiskers
+    for (const dy of [-0.012, 0.004, 0.02]) {
+      b.cylinder([sx * 0.1, padY + dy, padZ - 0.01], 0.0022, 0.0022, 0.13, '#f4f0e6', [0, sx * 0.25, Math.PI / 2 + sx * dy * 6], 3);
+    }
   }
   const body = new THREE.Mesh(b.build(), charMat);
 
-  const lb = new MeshBuilder();
-  lb.box(0, -(L - 0.05), 0, S.legW, L - 0.05, S.legW, c.body);
-  lb.box(0, -L, 0.01, S.legW + 0.01, 0.06, S.legW + 0.02, c.paws);
-  const legGeo = lb.build();
+  // Legs: rounded capsules with paws, pivoting at the top.
+  const legGeo = (back) => {
+    const lb = new SmoothBuilder();
+    const r = S.legW / 2;
+    lb.capsule([0, -(L - 0.03) / 2, 0], r * 1.05, Math.max(0.01, L - 0.03 - 2 * r), (x, y, z) => (y < -L + 0.07 ? c.paws : back ? coat(x, y + L, z - S.bd * 0.32, 0, 0, 0) : c.body), [0, 0, 0], 10);
+    if (back) lb.sphere([0, -0.03, -0.005], [S.legW * 0.8, L * 0.38, S.legW * 1.15], (x, y, z, nx, ny, nz) => coat(x, y + L, z - S.bd * 0.32, nx, ny, nz), 12);
+    lb.sphere([0, -L + 0.03, 0.018], [S.legW * 0.62, 0.035, S.legW * 0.82], c.paws, 12);
+    return lb.build();
+  };
+  const frontLeg = legGeo(false), backLeg = legGeo(true);
   const legs = [];
   const lx = S.bw / 2 - 0.07, lz = S.bd * 0.32;
-  for (const [x, z] of [[-lx, lz], [lx, lz], [-lx, -lz], [lx, -lz]]) {
-    const m = new THREE.Mesh(legGeo, charMat);
+  for (const [x, z, g] of [[-lx, lz, frontLeg], [lx, lz, frontLeg], [-lx, -lz, backLeg], [lx, -lz, backLeg]]) {
+    const m = new THREE.Mesh(g, charMat);
     m.position.set(x, L, z);
     legs.push(m);
   }
 
-  const tb = new MeshBuilder();
-  for (let i = 0; i < S.tailN; i++) {
-    const ring = c.stripe && (i % 2 === 1 || i === S.tailN - 1);
-    const col = ring ? c.stripe : c.top || c.body;
-    tb.box(0, -S.tailW / 2, -S.tailW / 2 - i * 0.07, S.tailW, S.tailW, 0.07, c.patches && i === 2 ? c.patches[0] : col);
-  }
+  // Tail: a gently curving tube, ringed on the tabbies.
+  const tl = S.tailN * 0.07 + 0.05, tr = S.tailW / 2;
+  const tb = new SmoothBuilder();
+  const tailPaint = (x, y, z) => {
+    if (c.stripe && (Math.sin(-z * 42) > 0.3 || z < -tl + 0.05)) return c.stripe;
+    if (c.patches && z < -tl * 0.35 && z > -tl * 0.6) return c.patches[0];
+    return c.top || c.body;
+  };
+  tb.tube([[0, 0, 0.02], [0, 0.01, -tl * 0.35], [0, 0.035, -tl * 0.7], [0, 0.07, -tl]], tr, tailPaint, 18, 10);
+  tb.sphere([0, 0.07, -tl], [tr, tr, tr], tailPaint, 10);
   const tail = new THREE.Mesh(tb.build(), charMat);
-  tail.position.set(0, T - 0.05, -S.bd / 2);
+  tail.position.set(0, T - 0.05, -S.bd / 2 + 0.03);
 
   const rig = new THREE.Group();
   rig.add(body, tail, ...legs);

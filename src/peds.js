@@ -134,7 +134,7 @@ export class Pedestrians {
         this.spawn(p, 90, 170);
         continue;
       }
-      p.h.group.visible = d < 150;
+      p.h.group.visible = d < 120;
       if (!p.h.group.visible) continue;
 
       // Getting hit by moving cars.

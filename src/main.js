@@ -15,7 +15,7 @@ import { Sfx } from './audio.js';
 import { CatSelect } from './select.js';
 
 const SAVE_KEY = 'mapleheights_save_v1';
-const PX_KEY = 'mapleheights_px';
+const PX_KEY = 'mapleheights_px2';
 
 function store(key, val) {
   try {
@@ -30,10 +30,10 @@ function store(key, val) {
 class Game {
   constructor() {
     this.canvas = document.getElementById('game');
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(1);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.BasicShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(62, 1, 0.3, 430);
     this.time = 0;
@@ -41,7 +41,7 @@ class Game {
     this.dead = false;
     this.state = 'title';
     this.hadLock = false;
-    this.pixelScale = Number(store(PX_KEY)) || 3;
+    this.pixelScale = Number(store(PX_KEY)) || 1;
 
     this.sfx = new Sfx();
     this.world = new World(this.scene);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MeshBuilder } from './geo.js';
+import { SmoothBuilder } from './smooth.js';
 import { NAX, NSZ, PX, PZ, ROAD, LANE, HALF, nodePos, groundHeight, segExists } from './world.js';
 import { angDiff, clamp, RNG } from './util.js';
 
@@ -11,47 +11,46 @@ export const SPECS = {
 };
 const COLORS = ['#c0392b', '#2e86c1', '#e8eaea', '#1c2833', '#7d8c8d', '#27ae60', '#8e44ad', '#d68910', '#5d6d7e', '#a04000', '#f2d7a0'];
 
-const carMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+const carMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.15 });
 const geoCache = new Map();
 
 function carGeo(type, color) {
   const key = type + color;
   if (geoCache.has(key)) return geoCache.get(key);
-  const s = SPECS[type], b = new MeshBuilder();
-  const glass = '#26303a', tire = '#151515', light = '#fff4c0', tail = '#c02020', trim = '#2a2a2a';
-  const L = s.len / 2;
+  const s = SPECS[type], b = new SmoothBuilder();
+  const glass = '#1e2a36', tire = '#151515', light = '#fff4c0', tail = '#c02020', trim = '#2a2a2a';
+  const L = s.len / 2, W = s.wid;
+  let ly = 0.62;
   if (type === 'van') {
-    b.box(0, 0.38, 0, s.wid, 1.72, s.len, color);
-    b.box(0, 1.25, L, 1.8, 0.7, 0.08, glass);
-    b.box(-s.wid / 2, 1.3, 1.5, 0.06, 0.6, 1.3, glass);
-    b.box(s.wid / 2, 1.3, 1.5, 0.06, 0.6, 1.3, glass);
-    b.box(0, 0.5, -L - 0.02, 1.6, 0.12, 0.04, trim);
+    b.rbox([0, 1.27, 0], [W, 1.75, s.len], 0.22, color);
+    b.rbox([0, 1.6, L - 0.25], [W - 0.12, 0.7, 0.5], 0.12, glass);
+    for (const sx of [-1, 1]) b.rbox([sx * (W / 2 - 0.03), 1.62, 1.3], [0.08, 0.6, 1.5], 0.04, glass);
+    b.rbox([0, 0.42, 0], [W + 0.04, 0.22, s.len + 0.06], 0.1, trim);
+    ly = 0.8;
   } else if (type === 'sports') {
-    b.box(0, 0.28, 0, s.wid, 0.52, s.len, color);
-    b.box(0, 0.8, -0.35, 1.6, 0.38, 1.8, glass);
-    b.box(0, 1.18, -0.4, 1.62, 0.06, 1.5, color);
-    b.box(0, 0.98, -L + 0.2, 1.8, 0.08, 0.4, trim);
-    b.box(0.6, 0.8, -L + 0.2, 0.08, 0.18, 0.2, trim);
-    b.box(-0.6, 0.8, -L + 0.2, 0.08, 0.18, 0.2, trim);
-    b.box(0, 0.8, 0.9, 0.8, 0.03, 1.0, trim);
+    b.rbox([0, 0.56, 0], [W, 0.52, s.len], 0.24, color);
+    b.rbox([0, 0.9, -0.3], [W - 0.4, 0.42, 1.9], 0.2, glass);
+    b.rbox([0, 1.08, -0.38], [W - 0.46, 0.08, 1.4], 0.04, color);
+    b.rbox([0, 1.0, -L + 0.22], [W - 0.1, 0.06, 0.38], 0.03, trim);
+    for (const sx of [-0.6, 0.6]) b.rbox([sx, 0.86, -L + 0.22], [0.08, 0.2, 0.18], 0.03, trim);
+    ly = 0.55;
   } else {
-    b.box(0, 0.32, 0, s.wid, 0.62, s.len, color);
-    b.box(0, 0.94, -0.25, 1.7, 0.5, 2.3, glass);
-    b.box(0, 1.44, -0.25, 1.72, 0.07, 2.2, color);
-    if (type === 'taxi') b.box(0, 1.51, -0.25, 0.7, 0.25, 0.3, '#ffe680');
+    b.rbox([0, 0.64, 0], [W, 0.62, s.len], 0.22, color);
+    b.rbox([0, 1.18, -0.22], [W - 0.22, 0.56, 2.35], 0.2, glass);
+    b.rbox([0, 1.45, -0.25], [W - 0.26, 0.08, 1.95], 0.04, color);
+    if (type === 'taxi') b.rbox([0, 1.58, -0.25], [0.72, 0.22, 0.3], 0.06, '#ffe680');
   }
-  const ly = type === 'van' ? 0.7 : type === 'sports' ? 0.5 : 0.6;
   for (const sx of [-1, 1]) {
-    b.box(sx * (s.wid / 2 - 0.3), ly, L, 0.42, 0.16, 0.06, light);
-    b.box(sx * (s.wid / 2 - 0.3), ly, -L, 0.42, 0.16, 0.06, tail);
+    b.rbox([sx * (W / 2 - 0.32), ly, L - 0.02], [0.42, 0.16, 0.08], 0.03, light);
+    b.rbox([sx * (W / 2 - 0.32), ly, -L + 0.02], [0.42, 0.16, 0.08], 0.03, tail);
     for (const sz of [-1, 1]) {
       const wz = sz * (L - 0.95);
-      b.box(sx * (s.wid / 2 - 0.12), 0, wz, 0.3, 0.64, 0.64, tire);
-      b.box(sx * (s.wid / 2 + 0.03), 0.2, wz, 0.02, 0.24, 0.24, '#9a9a9a');
+      b.cylinder([sx * (W / 2 - 0.1), 0.34, wz], 0.34, 0.34, 0.26, tire, [0, 0, Math.PI / 2], 10);
+      b.cylinder([sx * (W / 2 + 0.03), 0.34, wz], 0.19, 0.19, 0.02, '#a8a8a8', [0, 0, Math.PI / 2], 8);
     }
   }
-  b.box(0, 0.24, L + 0.02, s.wid, 0.16, 0.08, trim);
-  b.box(0, 0.24, -L - 0.02, s.wid, 0.16, 0.08, trim);
+  b.rbox([0, 0.36, L], [W, 0.18, 0.12], 0.05, trim);
+  b.rbox([0, 0.36, -L], [W, 0.18, 0.12], 0.05, trim);
   const g = b.build();
   geoCache.set(key, g);
   return g;
@@ -310,7 +309,7 @@ export class Traffic {
         if (d > 420 && !car.owned) this.spawnNear(car, 230, 330);
         else car.coast(dt);
       }
-      car.mesh.visible = d < 460;
+      car.mesh.visible = d < 320;
       car.sync();
     }
   }

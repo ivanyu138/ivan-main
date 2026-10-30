@@ -14,7 +14,7 @@ export class DayNight {
     this.hemi = new THREE.HemisphereLight('#cfe4ff', '#5a6a40', 0.8);
     this.sun = new THREE.DirectionalLight('#fff3dd', 1.6);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(1024, 1024);
+    this.sun.shadow.mapSize.set(2048, 2048);
     const c = this.sun.shadow.camera;
     c.left = c.bottom = -70;
     c.right = c.top = 70;
@@ -44,7 +44,7 @@ export class DayNight {
     const up = elev > -0.05 ? 1 : -1;
     const dir = new THREE.Vector3(Math.cos(a) * up, Math.max(0.25, Math.abs(elev)), 0.45).normalize();
     // Snap the shadow camera to texels so shadows don't shimmer as you move.
-    const step = 140 / 1024;
+    const step = 140 / 2048;
     const fx = Math.round(focus.x / step) * step, fz = Math.round(focus.z / step) * step;
     this.sun.position.set(fx + dir.x * 200, dir.y * 200, fz + dir.z * 200);
     this.sun.target.position.set(fx, 0, fz);

@@ -2,6 +2,8 @@
 
 A small open-world RPG in the browser. You play as one of three cats in third person, with a GTA-style chase camera, and the game renders at low resolution for a chunky retro look. The cats are Toro (a golden shaded British Shorthair), Uni (a brown tabby with a white belly) and Phantom (a mixed-color tabby with a two-tone face). The world is a procedurally generated, Brooklyn-style neighborhood of about 2 square miles (2.28 km × 2.28 km).
 
+The cats, people and cars are smooth, rounded models; coat patterns like stripes and patches are painted onto them. Press **P** for a chunkier, pixelated look.
+
 Built with [three.js](https://threejs.org) and [Vite](https://vitejs.dev). There are no asset files: the geometry, textures and sounds are all generated in code.
 
 ## Play it
@@ -63,12 +65,13 @@ npm run build      # static build in dist/
 | `src/main.js` | Game class: loop, input routing, interactions, shops, save/load, death |
 | `src/world.js` | City generation, merged and chunked geometry, colliders, minimap image |
 | `src/geo.js` | `MeshBuilder` for merged vertex-colored geometry, window and sign textures |
+| `src/smooth.js` | `SmoothBuilder` for rounded, painted character and car models |
 | `src/collision.js` | Spatial hash of box and circle obstacles |
 | `src/player.js`, `src/camera.js` | Character controller, chase camera |
 | `src/vehicles.js` | Car models, arcade driving physics, traffic AI |
 | `src/peds.js`, `src/npcs.js` | Ambient pedestrians, quest givers, enemies |
 | `src/cat.js`, `src/select.js` | The three playable cats, cat-select screen |
-| `src/characters.js` | Blocky humanoid model and animation (NPCs) |
+| `src/characters.js` | Humanoid model and animation (NPCs) |
 | `src/rpg.js`, `src/quests.js` | Stats, items, shops, quest definitions and state machine |
 | `src/ui.js` | HUD, minimap, dialog, panels |
 | `src/sky.js`, `src/audio.js` | Day/night lighting, synthesized sound effects |
