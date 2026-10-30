@@ -10,6 +10,7 @@ export class CameraRig {
     this.pitch = 0.32;
     this.dist = 5;
     this.idle = 0;
+    this.zoom = 1;
     this.target = new THREE.Vector3();
     this.cur = new THREE.Vector3();
     this.first = true;
@@ -27,7 +28,8 @@ export class CameraRig {
     this.idle = looking ? 0 : this.idle + dt;
 
     const car = p.vehicle;
-    const wantDist = car ? 9.5 : 3.2;
+    if (!g.modal) this.zoom = clamp(this.zoom * Math.exp(inp.zoom * 0.01), 0.5, 2.5);
+    const wantDist = (car ? 9.5 : 3.2) * this.zoom;
     this.dist += (wantDist - this.dist) * Math.min(1, dt * 3);
     if (car && this.idle > 1.2 && Math.abs(car.speed) > 2) {
       const behind = car.heading + (car.speed < -1 ? 0 : Math.PI);

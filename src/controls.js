@@ -3,15 +3,17 @@ export const CONTROLS = [
   ['Moving', [
     ['W A S D', 'Walk'],
     ['Mouse / arrows', 'Look around'],
+    ['2-finger drag', 'Look around (trackpad)'],
+    ['Pinch', 'Zoom in / out'],
     ['Shift', 'Sprint'],
     ['Space', 'Jump'],
   ]],
   ['Cat actions', [
-    ['Click / J', 'Scratch'],
+    ['R / Click', 'Scratch'],
+    ['E', 'Hiss'],
     ['Q', 'Meow'],
-    ['R', 'Hiss'],
     ['G', 'Pick up / drop item'],
-    ['E', 'Talk / interact / shop'],
+    ['T', 'Talk / interact / shop'],
     ['F', 'Get in a car'],
   ]],
   ['Driving', [
@@ -19,7 +21,7 @@ export const CONTROLS = [
     ['A / D', 'Steer'],
     ['Space', 'Handbrake'],
     ['H', 'Horn'],
-    ['F / E', 'Get out'],
+    ['F', 'Get out'],
   ]],
   ['Menus', [
     ['Esc or `', 'This menu'],

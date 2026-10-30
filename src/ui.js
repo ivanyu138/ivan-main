@@ -255,7 +255,7 @@ export class UI {
     el.querySelector('.text').textContent = p.text;
     el.querySelector('.opts').innerHTML = p.choices
       ? p.choices.map((c, i) => `<span class="k">[${i + 1}]</span> ${esc(c.label)}`).join('&nbsp;&nbsp;&nbsp;')
-      : '<span class="k">[E]</span> continue';
+      : '<span class="k">[T]</span> continue';
   }
 
   dialogInput(inp) {
@@ -268,7 +268,7 @@ export class UI {
       } else if (inp.pressed('Escape') || inp.pressed('Backspace')) this.closeDialog();
       return;
     }
-    if (inp.pressed('KeyE') || inp.pressed('Enter') || inp.pressed('Space') || inp.pressed('Mouse0')) {
+    if (inp.pressed('KeyT') || inp.pressed('Enter') || inp.pressed('Space') || inp.pressed('Mouse0')) {
       d.i++;
       if (d.i >= d.pages.length) {
         const cb = d.onDone;
@@ -313,7 +313,7 @@ export class UI {
         const own = s.item && r.inventory[s.item] ? ` <span class="dim">x${r.inventory[s.item]}</span>` : '';
         h += `<div class="item"><span><span class="k">[${i + 1}]</span> ${label}${own}</span><span>$${g.shopPrice(s)}</span></div>`;
       });
-      h += `<div class="foot">Press a number to buy &middot; E / Esc to leave</div>`;
+      h += `<div class="foot">Press a number to buy &middot; T / Esc to leave</div>`;
     } else if (P.type === 'inv') {
       h = '<h2>Inventory</h2>';
       const ids = ITEM_ORDER.filter((id) => r.inventory[id]);
@@ -444,7 +444,7 @@ export class UI {
 
   panelInput(inp) {
     const g = this.game, P = this.panel, n = inp.digit();
-    const closeKey = { shop: 'KeyE', inv: 'KeyI', char: 'KeyC', log: 'Tab', map: 'KeyM' }[P.type];
+    const closeKey = { shop: 'KeyT', inv: 'KeyI', char: 'KeyC', log: 'Tab', map: 'KeyM' }[P.type];
     if (inp.pressed(closeKey) || inp.pressed('Escape') || inp.pressed('Backspace')) return this.closePanel();
     if (!n) return;
     if (P.type === 'shop') g.buy(P.arg, n - 1);

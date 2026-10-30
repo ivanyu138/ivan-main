@@ -237,13 +237,13 @@ export class Player {
     this.pos.x = clamp(this.pos.x, -lim, lim);
     this.pos.z = clamp(this.pos.z, -lim, lim);
 
-    if (this.canAct() && inp.pressed('KeyR') && this.hissCd <= 0) this.hiss();
+    if (this.canAct() && inp.pressed('KeyE') && this.hissCd <= 0) this.hiss();
     this.hissT = Math.max(0, this.hissT - dt * 1.1);
 
     // Scratch
     this.punchCd -= dt;
     if (this.punchT > 0) this.punchT = Math.max(0, this.punchT - dt * 3.2);
-    if (this.canAct() && (inp.pressed('Mouse0') || inp.pressed('KeyJ')) && this.punchCd <= 0) {
+    if (this.canAct() && (inp.pressed('Mouse0') || inp.pressed('KeyR')) && this.punchCd <= 0) {
       this.punchCd = 0.42;
       this.punchT = 1;
       g.sfx.play('scratch');

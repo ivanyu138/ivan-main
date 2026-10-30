@@ -23,15 +23,16 @@ npm run build      # static build in dist/
 | Key | On foot | In a car |
 | --- | --- | --- |
 | WASD | move | throttle / brake / steer |
-| Mouse (or arrow keys) | orbit camera | orbit camera (auto-recenters) |
+| Mouse, arrow keys or two-finger trackpad drag | orbit camera | orbit camera (auto-recenters) |
+| Pinch (trackpad) | zoom camera | zoom camera |
 | Shift | sprint | |
 | Space | jump | handbrake |
-| Click / J | scratch | |
+| R or click | scratch | |
+| E | hiss | |
 | Q | meow | meow |
-| R | hiss | |
-| E | talk / interact / enter shop | exit |
+| T | talk / interact / enter shop / give item | |
 | G | pick up / drop an item in your mouth | |
-| F | enter or carjack a car | exit |
+| F | enter or carjack a car | get out |
 | H | | horn |
 | 1–5 | use hotbar item | use hotbar item |
 | Tab / I / C / M | quest log / inventory / character / map | |

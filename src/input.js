@@ -27,6 +27,20 @@ export class Input {
       }
     });
     el.addEventListener('contextmenu', (e) => e.preventDefault());
+    // Trackpad: a two-finger drag arrives as wheel events and turns the camera like the mouse;
+    // a pinch arrives as a ctrl+wheel event and zooms.
+    this.zoom = 0;
+    el.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const k = e.deltaMode === 1 ? 16 : 1;
+      if (e.ctrlKey) this.zoom += e.deltaY * k;
+      else {
+        this.mouseDX += e.deltaX * k * 1.5;
+        this.mouseDY += e.deltaY * k * 1.5;
+      }
+    }, { passive: false });
+    // Safari's own pinch gesture events, so pinching zooms the camera instead of the page.
+    for (const t of ['gesturestart', 'gesturechange']) el.addEventListener(t, (e) => e.preventDefault());
   }
 
   get locked() {
@@ -50,5 +64,6 @@ export class Input {
     this.hits.clear();
     this.mouseDX = 0;
     this.mouseDY = 0;
+    this.zoom = 0;
   }
 }

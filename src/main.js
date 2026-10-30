@@ -457,7 +457,7 @@ class Game {
 
     if (p.vehicle) {
       ui.prompt('');
-      if (inp.pressed('KeyF') || inp.pressed('KeyE')) {
+      if (inp.pressed('KeyF')) {
         this.lastCar = p.vehicle;
         this.exitCar();
       }
@@ -473,13 +473,13 @@ class Game {
     const npc = this.npcs.nearest(p.pos, 2.6);
     const poi = Object.values(this.world.pois).find((q) => q.shop && Math.hypot(q.door.x - p.pos.x, q.door.z - p.pos.z) < 2.6);
     if (item) {
-      text = `[E] ${item.interact}`;
+      text = `[T] ${item.interact}`;
       action = () => this.pickUp(item);
     } else if (npc) {
-      text = this.wantsCarried(npc) ? `[E] Give the ${p.carry.name} to ${npc.def.name}` : `[E] Talk to ${npc.def.name}`;
+      text = this.wantsCarried(npc) ? `[T] Give the ${p.carry.name} to ${npc.def.name}` : `[T] Talk to ${npc.def.name}`;
       action = () => this.talk(npc);
     } else if (poi) {
-      text = `[E] Enter ${poi.name}`;
+      text = `[T] Enter ${poi.name}`;
       action = () => {
         this.sfx.play('door');
         ui.openPanel('shop', poi.shop);
@@ -501,7 +501,7 @@ class Game {
     const car = this.traffic.nearest(p.pos, 1.6);
     if (car) text += (text ? '\n' : '') + `[F] ${car.mode === 'ai' ? 'Carjack' : 'Get in'} ${car.owned ? 'your ' : ''}${car.spec.name}`;
     ui.prompt(text);
-    if (inp.pressed('KeyE') && action) action();
+    if (inp.pressed('KeyT') && action) action();
     else if (inp.pressed('KeyF') && car) this.enterCar(car);
   }
 
