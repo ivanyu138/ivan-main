@@ -8,7 +8,7 @@ const wrapMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 
 
 // Small things a cat can carry in its mouth. Each model sits on the ground (y = 0)
 // with its long side along z, which becomes crosswise in the cat's mouth.
-const KINDS = {
+export const KINDS = {
   wrap: {
     name: 'plastic wrap', mat: wrapMat,
     build: (b) => {
@@ -80,7 +80,8 @@ const KINDS = {
     build: (b) => b.rbox([0, 0.008, 0], [0.14, 0.016, 0.18], 0.005, '#b08a5a'),
   },
 };
-const KIND_IDS = Object.keys(KINDS);
+// Fish and socks turn up more often, since people want them.
+const KIND_IDS = [...Object.keys(KINDS), 'fish', 'fish', 'sock', 'sock'];
 // Drawn a bit larger than life so they're easy to spot from the chase camera.
 const SIZE = 1.5;
 const geoCache = {};
@@ -91,6 +92,12 @@ function geoFor(kind) {
     geoCache[kind] = b.build();
   }
   return geoCache[kind];
+}
+
+export function litterMesh(kind) {
+  const mesh = new THREE.Mesh(geoFor(kind), KINDS[kind].mat || mat);
+  mesh.castShadow = true;
+  return mesh;
 }
 
 // Litter scattered on sidewalks, lots and backyards, recycled around the player.
@@ -111,8 +118,7 @@ export class Litter {
       if (Math.abs(x) > HALF - 5 || Math.abs(z) > HALF - 5) continue;
       if (g.world.colliders.pointBlocked(x, 0.1, z, 0.3)) continue;
       const kind = rng.pick(KIND_IDS);
-      const mesh = new THREE.Mesh(geoFor(kind), KINDS[kind].mat || mat);
-      mesh.castShadow = true;
+      const mesh = litterMesh(kind);
       mesh.position.set(x, groundHeight(x, z), z);
       mesh.rotation.y = rng.range(0, Math.PI * 2);
       mesh.scale.setScalar(SIZE);
@@ -141,6 +147,12 @@ export class Litter {
   take(it) {
     it.carried = true;
     this.game.scene.remove(it.mesh);
+  }
+
+  // Stop tracking an item (it was given away or stashed).
+  forget(it) {
+    const i = this.items.indexOf(it);
+    if (i >= 0) this.items.splice(i, 1);
   }
 
   // Drop an item from height y; it falls to the ground.

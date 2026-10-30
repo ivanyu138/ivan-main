@@ -11,6 +11,7 @@ import { Pedestrians } from './peds.js';
 import { NPCs } from './npcs.js';
 import { Pickups } from './pickups.js';
 import { Litter } from './litter.js';
+import { Stash } from './stash.js';
 import { Quests, QUESTS } from './quests.js';
 import { Sfx } from './audio.js';
 import { CatSelect } from './select.js';
@@ -59,6 +60,7 @@ class Game {
     this.npcs = new NPCs(this);
     this.pickups = new Pickups(this);
     this.litter = new Litter(this);
+    this.stash = new Stash(this);
     this.quests = new Quests(this);
     this.select = new CatSelect();
 
@@ -169,6 +171,7 @@ class Game {
     for (const c of this.traffic.cars) c.owned = false;
     if (this.player.vehicle) this.exitCar();
     this.pickups.initGnomes([]);
+    this.stash.load([]);
     this.sky.time = 9;
     this.toSpawn();
   }
@@ -202,13 +205,53 @@ class Game {
       c.hp = d.car.hp ?? 100;
     }
     this.pickups.initGnomes(this.rpg.gnomes);
+    this.stash.load(this.rpg.stash);
     this.player.setCat(this.rpg.cat || 'ginger');
     return true;
   }
 
   // ------------------------------------------------------------ actions
 
+  // Quest markers, plus a "?" over anyone who wants what the cat is carrying.
+  npcMarker(n) {
+    if (this.wantsCarried(n)) return 'turnin';
+    return this.quests.markerFor(n.id);
+  }
+
+  wantsCarried(n) {
+    const c = this.player.carry;
+    return !!(c && n.def.wants && c.kind === n.def.wants);
+  }
+
+  giveCarried(npc) {
+    const it = this.player.release(), r = this.rpg, name = npc.def.name, ui = this.ui;
+    this.scene.remove(it.mesh);
+    this.sfx.play('buy');
+    if (npc.def.wants === 'fish') {
+      r.fishGiven++;
+      const lines = [
+        'A fish! For me? Oh, you sweet thing. Here, have some treats.',
+        'Another fish! You spoil me. Treats for the good kitty.',
+        'Fresh catch! Whiskers will be so jealous. Here you go.',
+      ];
+      ui.showDialog([{ name, text: lines[(r.fishGiven - 1) % lines.length] }]);
+      r.addItem('treats', 2);
+      ui.toast('+2 Cat Treats', '#ffb0c8');
+      r.addXP(15);
+      r.rep += 2;
+    } else {
+      r.socksSold++;
+      const pay = Math.round(12 * r.payMult());
+      const set = r.socksSold % 5 === 0;
+      ui.showDialog([{ name, text: set ? 'That makes a full set of five! Here, a little bonus.' : ['Ooh, a fine sock. Here you go.', 'Argyle? Stripes? I\'ll take it!', 'Still warm. Lovely.'][r.socksSold % 3] }]);
+      r.addMoney(pay + (set ? 60 : 0));
+      r.addXP(set ? 40 : 10);
+    }
+    this.save();
+  }
+
   talk(npc) {
+    if (this.wantsCarried(npc)) return this.giveCarried(npc);
     const q = this.quests, name = npc.def.name, page = (text) => ({ name, text });
     const turnIn = q.talkTarget(npc.id);
     if (turnIn) {
@@ -431,7 +474,7 @@ class Game {
       text = `[E] ${item.interact}`;
       action = () => this.pickUp(item);
     } else if (npc) {
-      text = `[E] Talk to ${npc.def.name}`;
+      text = this.wantsCarried(npc) ? `[E] Give the ${p.carry.name} to ${npc.def.name}` : `[E] Talk to ${npc.def.name}`;
       action = () => this.talk(npc);
     } else if (poi) {
       text = `[E] Enter ${poi.name}`;
@@ -441,13 +484,16 @@ class Game {
       };
     }
     // Carrying things in the cat's mouth.
-    if (p.carry) text += (text ? '\n' : '') + `[G] Drop the ${p.carry.name}`;
+    const atStash = this.stash.near(p.pos);
+    if (p.carry) text += (text ? '\n' : '') + (atStash ? `[G] Add the ${p.carry.name} to your stash` : `[G] Drop the ${p.carry.name}`);
     else {
       const w = p.mouthWorld(), near = this.litter.nearest(w.x, w.z, 0.9);
       if (near) text += (text ? '\n' : '') + `[G] Pick up the ${near.name}`;
+      else if (atStash) text += (text ? '\n' : '') + `Your stash: ${this.stash.kinds.length} treasures`;
     }
     if (inp.pressed('KeyG')) {
-      if (p.carry) p.drop();
+      if (p.carry && atStash) this.stash.add(p.release());
+      else if (p.carry) p.drop();
       else p.grab();
     }
     const car = this.traffic.nearest(p.pos, 1.6);

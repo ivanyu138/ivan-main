@@ -8,6 +8,31 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 const ITEM_ORDER = Object.keys(ITEMS);
 
+function houseIcon(x, cx, cy) {
+  x.fillStyle = '#000';
+  x.beginPath();
+  x.moveTo(cx - 7, cy);
+  x.lineTo(cx, cy - 7);
+  x.lineTo(cx + 7, cy);
+  x.lineTo(cx + 5, cy);
+  x.lineTo(cx + 5, cy + 6);
+  x.lineTo(cx - 5, cy + 6);
+  x.lineTo(cx - 5, cy);
+  x.closePath();
+  x.fill();
+  x.fillStyle = '#e8c890';
+  x.beginPath();
+  x.moveTo(cx - 5, cy - 0.5);
+  x.lineTo(cx, cy - 5);
+  x.lineTo(cx + 5, cy - 0.5);
+  x.lineTo(cx + 3.5, cy - 0.5);
+  x.lineTo(cx + 3.5, cy + 4.5);
+  x.lineTo(cx - 3.5, cy + 4.5);
+  x.lineTo(cx - 3.5, cy - 0.5);
+  x.closePath();
+  x.fill();
+}
+
 export class UI {
   constructor(game) {
     this.game = game;
@@ -133,7 +158,7 @@ export class UI {
       x.fillText(poi.name[0], mx, my + 1);
     }
     for (const n of g.npcs.list) {
-      const m = g.quests.markerFor(n.id);
+      const m = g.npcMarker(n);
       if (!m) continue;
       const [mx, my] = to(n.pos.x, n.pos.z);
       x.fillStyle = m === 'locked' ? '#8a8a8a' : '#ffd34d';
@@ -142,6 +167,11 @@ export class UI {
       x.font = 'bold 14px monospace';
       x.strokeText(m === 'turnin' ? '?' : '!', mx, my);
       x.fillText(m === 'turnin' ? '?' : '!', mx, my);
+    }
+    // Home base: a little house icon.
+    {
+      const [hx, hy, out] = to(g.stash.pos.x, g.stash.pos.z);
+      if (!out) houseIcon(x, hx, hy);
     }
     for (const c of g.traffic.cars) {
       if (!c.owned) continue;
@@ -284,7 +314,7 @@ export class UI {
       ids.forEach((id, i) => {
         h += `<div class="item"><span><span class="k">[${i + 1}]</span> ${ITEMS[id].name} <span class="dim">${ITEMS[id].desc}</span></span><span>x${r.inventory[id]}</span></div>`;
       });
-      h += `<h3>Collection</h3><div>Golden gnomes: ${r.gnomes.length}/10</div>`;
+      h += `<h3>Collection</h3><div>Golden gnomes: ${r.gnomes.length}/10</div><div>Treasures in your stash: ${g.stash.kinds.length}</div><div>Fish given to Mrs. Hendricks: ${r.fishGiven}</div><div>Socks sold to Sal: ${r.socksSold}</div>`;
       h += `<div class="foot">Number to use &middot; I / Esc to close</div>`;
     } else if (P.type === 'char') {
       h = `<h2>${CATS[r.cat] ? CATS[r.cat].name : 'Character'}</h2>
@@ -357,6 +387,13 @@ export class UI {
       label(poi.name, mx + (west ? -9 : 9), my);
     }
     x.textAlign = 'center';
+    {
+      const [hx, hy] = to(g.stash.pos.x, g.stash.pos.z);
+      houseIcon(x, hx, hy);
+      x.textAlign = 'right';
+      label('YOUR STASH', hx - 9, hy + 12, 11, '#e8c890');
+      x.textAlign = 'center';
+    }
     const park = g.world.parks.prospect.lake;
     label('MAPLE PARK', to(park.x, park.z - 130)[0], to(park.x, park.z - 130)[1], 12, '#cfe8b0');
     x.save();
@@ -372,7 +409,7 @@ export class UI {
     label('MAIN ST', 0, 0, 12, '#ffd34d');
     x.restore();
     for (const n of g.npcs.list) {
-      const m = g.quests.markerFor(n.id);
+      const m = g.npcMarker(n);
       if (!m) continue;
       const [mx, my] = to(n.pos.x, n.pos.z);
       x.font = 'bold 16px monospace';

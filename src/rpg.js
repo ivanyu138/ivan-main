@@ -12,6 +12,13 @@ export const ITEMS = {
   pie: { name: 'Cherry Pie', desc: '+40 HP', use: (g) => g.rpg.heal(40) },
   pizza: { name: 'Pizza Slice', desc: '+35 HP', use: (g) => g.rpg.heal(35) },
   burger: { name: 'Burger', desc: 'Full heal', use: (g) => g.rpg.heal(9999) },
+  treats: {
+    name: 'Cat Treats', desc: '+30 HP and full stamina',
+    use: (g) => {
+      g.rpg.heal(30);
+      g.rpg.stamina = g.rpg.maxStamina;
+    },
+  },
 };
 
 export const SHOPS = {
@@ -63,6 +70,9 @@ export class RPG {
     this.inventory = { soda: 2 };
     this.gnomes = [];
     this.cat = 'ginger';
+    this.fishGiven = 0;
+    this.socksSold = 0;
+    this.stash = [];
     this.boostT = 0;
     this.drainT = 0;
   }
@@ -152,8 +162,9 @@ export class RPG {
   }
 
   serialize() {
-    const { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat } = this;
-    return { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat };
+    const { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold } = this;
+    const stash = this.game.stash ? this.game.stash.kinds : this.stash;
+    return { level, xp, money, maxHp, hp, stamina, rep, skillPoints, skills, inventory, gnomes, cat, fishGiven, socksSold, stash };
   }
 
   load(d) {

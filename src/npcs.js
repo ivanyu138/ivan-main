@@ -17,7 +17,8 @@ export const NPC_DEFS = {
       const L = lotRect(6, 5);
       return { x: L.x0 + 60, z: L.z0 - 1.2 };
     },
-    chat: ['Have you tried the cherry pie at Lou\'s? Divine.', 'In my day, cars didn\'t go this fast.', 'Whiskers sends her regards. Probably.'],
+    wants: 'fish',
+    chat: ['Have you tried the cherry pie at Lou\'s? Divine.', 'If you ever find a fish, bring it here. I always have treats for a good kitty.', 'In my day, cars didn\'t go this fast.', 'Whiskers sends her regards. Probably.'],
   },
   tony: {
     name: 'Tony',
@@ -36,6 +37,21 @@ export const NPC_DEFS = {
     look: { skin: '#c68b5e', hair: '#2a1d14', shirt: '#2a3a6a', pants: '#1f1f24', hat: '#1a2448' },
     at: (w) => ({ x: w.pois.police.door.x, z: w.pois.police.door.z + 4 }),
     chat: ['Keep your nose clean.', 'Slow down out there. Kids play on these streets.'],
+  },
+  sal: {
+    name: 'Sock Sal',
+    look: { skin: '#e0ac85', hair: '#9a9a9a', shirt: '#4ac9c0', pants: '#8a4ac9', shoes: '#e04848' },
+    at: () => {
+      const L = lotRect(4, 8);
+      return { x: L.x1 + 2.2, z: (L.z0 + L.z1) / 2 };
+    },
+    facing: Math.PI / 2,
+    wants: 'sock',
+    chat: [
+      'Socks! I buy socks. Any sock. Lost socks, odd socks, chewed socks. Bring them here.',
+      'Every sock has a story. Usually it is "fell behind the dryer."',
+      'Five socks makes a set. Bring me a set and there\'s a bonus in it for you.',
+    ],
   },
   pete: {
     name: 'Old Pete',
@@ -84,7 +100,9 @@ export class NPCs {
       sprite.renderOrder = 10;
       h.group.add(sprite);
       game.scene.add(h.group);
-      this.list.push({ id, def, h, pos: h.group.position, facing: Math.PI, home: Math.PI, sprite, phase: this.rng.range(0, 6), chatI: 0 });
+      const home = def.facing ?? Math.PI;
+      h.group.rotation.y = home;
+      this.list.push({ id, def, h, pos: h.group.position, facing: home, home, sprite, phase: this.rng.range(0, 6), chatI: 0 });
     }
     this.barBg = new THREE.MeshBasicMaterial({ color: '#400', depthTest: false });
     this.barFg = new THREE.MeshBasicMaterial({ color: '#e33', depthTest: false });
@@ -204,7 +222,7 @@ export class NPCs {
       n.phase += dt;
       animateHumanoid(n.h, 0, 0);
       n.h.armL.rotation.x = Math.sin(n.phase * 1.3) * 0.08;
-      const m = g.quests.markerFor(n.id);
+      const m = g.npcMarker(n);
       n.sprite.visible = !!m;
       if (m) n.sprite.material = this.marks[m];
       n.sprite.position.y = 2.4 + Math.sin(n.phase * 3) * 0.08;

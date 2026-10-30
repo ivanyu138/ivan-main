@@ -120,6 +120,16 @@ export class Player {
     this.cat.rig.add(mesh);
   }
 
+  // Hand over the carried item (to a person or the stash) instead of dropping it.
+  release() {
+    const it = this.carry;
+    if (!it) return null;
+    this.cat.rig.remove(it.mesh);
+    this.carry = null;
+    this.game.litter.forget(it);
+    return it;
+  }
+
   drop() {
     const it = this.carry;
     if (!it) return;
