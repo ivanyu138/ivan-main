@@ -36,7 +36,7 @@ npm run build      # static build in dist/
 | 1–5 | use hotbar item | use hotbar item |
 | Tab / I / C / M | quest log / inventory / character / map | |
 | P | cycle pixel size (1×–4×) | |
-| Esc | pause | |
+| Esc or ` | pause menu: resume, change cat, list of controls | same |
 
 ## What's in it
 

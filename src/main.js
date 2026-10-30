@@ -14,6 +14,7 @@ import { Litter } from './litter.js';
 import { Quests, QUESTS } from './quests.js';
 import { Sfx } from './audio.js';
 import { CatSelect } from './select.js';
+import { controlsHTML } from './controls.js';
 
 const SAVE_KEY = 'mapleheights_save_v1';
 const PX_KEY = 'mapleheights_px2';
@@ -114,6 +115,7 @@ class Game {
     };
     const pickCat = (first) => {
       title.style.display = 'none';
+      pause.style.display = 'none';
       this.sfx.unlock();
       this.state = 'select';
       this.select.open(this.rpg.cat, (id) => {
@@ -129,21 +131,30 @@ class Game {
       pickCat(true);
     };
     changeCat.onclick = () => pickCat(false);
-    pause.onclick = () => {
+    for (const el of document.querySelectorAll('.controls')) el.innerHTML = controlsHTML();
+    // Pause menu: Esc (or the ` key, for keyboards without Esc) opens it during play.
+    this.openPause = () => {
+      if (this.state !== 'play') return;
+      this.state = 'paused';
+      this.pausedAt = performance.now();
+      pause.style.display = 'flex';
+      this.save();
+      if (document.pointerLockElement) document.exitPointerLock();
+    };
+    this.resume = () => {
       pause.style.display = 'none';
       this.state = 'play';
       lock();
     };
+    this.pauseChangeCat = () => pickCat(false);
+    document.getElementById('btn-resume').onclick = () => this.resume();
+    document.getElementById('btn-pause-cat').onclick = () => this.pauseChangeCat();
     this.canvas.addEventListener('click', () => {
       if (this.state === 'play' && !this.input.locked) lock();
     });
     document.addEventListener('pointerlockchange', () => {
       if (this.input.locked) this.hadLock = true;
-      else if (this.state === 'play' && this.hadLock) {
-        this.state = 'paused';
-        pause.style.display = 'flex';
-        this.save();
-      }
+      else if (this.state === 'play' && this.hadLock) this.openPause();
     });
   }
 
@@ -387,6 +398,7 @@ class Game {
       this.resize();
       ui.toast(`Pixel size: ${this.pixelScale}x`);
     }
+    if (!this.modal && (inp.pressed('Escape') || inp.pressed('Backquote'))) return this.openPause();
     if (this.modal === 'dialog') return ui.dialogInput(inp);
     if (this.modal === 'panel') return ui.panelInput(inp);
     if (this.dead) return;
@@ -495,7 +507,15 @@ class Game {
       this.renderer.render(this.select.scene, this.select.camera);
       this.input.endFrame();
       return;
-    } else this.sfx.setEngine(false, 0);
+    } else {
+      this.sfx.setEngine(false, 0);
+      // Pause menu keys. Ignore the first moments so the key that opened it doesn't also close it.
+      const inp = this.input;
+      if (this.state === 'paused' && performance.now() - this.pausedAt > 250) {
+        if (inp.pressed('Escape') || inp.pressed('Backquote') || inp.pressed('Digit1') || inp.pressed('Enter')) this.resume();
+        else if (inp.pressed('Digit2')) this.pauseChangeCat();
+      }
+    }
     this.renderer.render(this.scene, this.camera);
     this.input.endFrame();
   }
